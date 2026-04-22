@@ -212,10 +212,31 @@ window.closeReward = (e) => {
   }});
 };
 
+window.handleFileSelect = (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  if (file.size > 2 * 1024 * 1024) {
+    alert("照片檔案過大，請選擇 2MB 以下的圖片。");
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    state.pendingImageData = event.target.result;
+    document.getElementById('upload-placeholder').style.display = 'none';
+    const preview = document.getElementById('upload-preview');
+    const img = document.getElementById('preview-img');
+    img.src = state.pendingImageData;
+    preview.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+};
+
 window.submitObservation = async () => {
   const userId = auth.currentUser ? auth.currentUser.uid : 'demo_user';
   const data = {
-    photoUrl: document.getElementById('sub-url').value,
+    photoUrl: state.pendingImageData, // 使用 Base64 資料
     nickname: document.getElementById('sub-nickname').value,
     locationName: document.getElementById('sub-location').value,
     story: document.getElementById('sub-story').value,
@@ -225,15 +246,18 @@ window.submitObservation = async () => {
 
   const status = document.getElementById('sub-status');
   if (!data.photoUrl || !data.nickname || !data.locationName || !data.story || !data.consent) {
-    status.innerText = "請填寫完整資訊並勾選同意。";
+    status.innerText = "請上傳照片並填寫完整資訊。";
     return;
   }
 
-  status.innerText = "正在傳送記憶...";
+  status.innerText = "正在傳送海洋記憶...";
   try {
     await DB.submitPhoto(userId, data);
     status.innerText = "投稿成功！感謝你的觀察。";
     document.getElementById('submission-form').reset();
+    document.getElementById('upload-placeholder').style.display = 'block';
+    document.getElementById('upload-preview').style.display = 'none';
+    state.pendingImageData = null;
   } catch (err) {
     status.innerText = "傳送失敗，請稍後再試。";
     console.error(err);

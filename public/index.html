@@ -165,10 +165,22 @@
         <p style="color:var(--sea-slate); font-size:0.9rem; font-weight:300; margin-bottom:50px;">分享你安靜觀察海岸的瞬間，讓你的記憶成為下一位守護者的獎勵。</p>
         
         <form id="submission-form" style="display: flex; flex-direction: column; gap: 20px;">
-            <div style="border-bottom: 1px solid var(--glass-border); padding-bottom:5px;">
-                <label style="font-size:0.6rem; color:var(--sea-teal); letter-spacing:3px; text-transform:uppercase; display:block; margin-bottom:5px;">照片網址 (Photo URL)</label>
-                <input type="text" id="sub-url" placeholder="請貼上照片連結..." class="input-altar" style="border:none; margin-bottom:0; font-size:0.9rem; background: transparent; color: var(--sea-sand); width: 100%;">
+            <!-- 照片上傳區塊 -->
+            <div id="upload-area" style="border: 2px dashed var(--glass-border); border-radius: 8px; padding: 40px; text-align: center; cursor: pointer; transition: 0.3s; background: rgba(255,255,255,0.02);" onclick="document.getElementById('file-input').click()">
+                <input type="file" id="file-input" accept="image/jpeg, image/png" hidden onchange="window.handleFileSelect(event)">
+                <div id="upload-placeholder">
+                    <i class="fa-solid fa-camera" style="font-size: 2rem; color: var(--sea-teal); margin-bottom: 15px; display: block;"></i>
+                    <p style="font-size: 0.8rem; color: var(--sea-sand); letter-spacing: 2px; margin-bottom: 5px;">點擊或拖放上傳海岸照片</p>
+                    <p style="font-size: 0.6rem; color: var(--sea-slate);">支援 JPG, PNG (建議解析度 1200px 以上)</p>
+                </div>
+                <div id="upload-preview" style="display: none; position: relative;">
+                    <img id="preview-img" style="width: 100%; max-height: 300px; object-fit: cover; border-radius: 4px; opacity: 0.8;">
+                    <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.4); opacity: 0; transition: 0.3s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0">
+                        <span style="font-size: 0.7rem; color: #fff; letter-spacing: 2px;">更換照片</span>
+                    </div>
+                </div>
             </div>
+
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:30px;">
                 <div style="border-bottom: 1px solid var(--glass-border); padding-bottom:5px;">
                     <label style="font-size:0.6rem; color:var(--sea-teal); letter-spacing:3px; text-transform:uppercase; display:block; margin-bottom:5px;">你的暱稱</label>
