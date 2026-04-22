@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>海洋共生體 | SYMBIOSIS 2.0</title>
+  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;900&family=Montserrat:wght@900&display=swap" rel="stylesheet">
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/MotionPathPlugin.min.js"></script>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+  <!-- 動態流體背景 -->
+  <div class="sea-bg">
+    <div class="liquid-blob"></div>
+    <div class="liquid-blob" style="left: 60%; top: 40%; animation-delay: -5s;"></div>
+  </div>
+
+  <!-- 1. 入口儀式 -->
+  <div id="mirror-gate">
+      <div class="mirror-portal" onclick="window.enterApp()"></div>
+      <p class="portal-text">TOUCH TO AWAKEN</p>
+  </div>
+
+  <!-- 2. 登入介面 -->
+  <div id="auth-overlay" style="display: none;">
+    <div class="auth-box">
+      <h2 style="letter-spacing: 5px; margin-bottom: 40px;">身份標記</h2>
+      <form id="auth-form">
+        <input type="email" id="auth-email" class="input-altar" placeholder="信箱">
+        <input type="password" id="auth-pw" class="input-altar" placeholder="密碼">
+        <button type="submit" class="btn-ignite" style="margin-top: 30px; padding: 15px;">確認</button>
+      </form>
+      <p id="auth-error" style="color: var(--gold); font-size: 0.7rem; margin-top: 20px;"></p>
+    </div>
+  </div>
+
+  <!-- 3. 待機畫面 -->
+  <div id="idle-screen" style="display: none;">
+    <div class="idle-text" id="idle-content"></div>
+  </div>
+
+  <!-- 4. 儀式動畫層 (修正位移) -->
+  <div id="anim-overlay">
+      <svg class="flow-svg" viewBox="0 0 500 1000">
+        <path id="river-path" d="M250,1000 C150,800 350,600 250,400 C150,200 250,0 250,-100" />
+      </svg>
+      <div id="light-essence"></div>
+      <div id="narrative-box">
+          <div class="narrative-line" id="line-1">正在感知你的選擇...</div>
+          <div class="narrative-line" id="line-2">流動、匯聚，成為波浪...</div>
+          <div class="narrative-line" id="line-3" style="color:var(--accent); font-weight:900;"></div>
+          <button id="btn-reveal-final" onclick="window.revealReward()" style="display:none; background:none; border:1px solid #fff; color:#fff; padding:15px 40px; margin: 40px auto; cursor:pointer; letter-spacing:5px;">揭開海洋的回應</button>
+      </div>
+  </div>
+
+  <!-- 5. 3D 獎勵卡片 (修正彈出) -->
+  <div class="stage-overlay" id="reward-stage">
+      <div id="card-3d">
+          <div class="card-inner" id="card-inner" onclick="window.flipCard()">
+              <div class="card-face">
+                  <div class="card-img-wrap"><img id="c-img"></div>
+                  <div class="card-content">
+                      <span id="c-loc-tag" style="font-size:0.6rem; letter-spacing:2px; color:var(--accent); border:1px solid var(--accent); padding:2px 6px; margin-bottom:15px; display:inline-block;"></span>
+                      <h3 id="c-loc"></h3>
+                      <p id="c-story"></p>
+                  </div>
+              </div>
+              <div class="card-face face-back">
+                  <h3 style="letter-spacing:4px; margin-bottom:30px;">守護價值</h3>
+                  <div class="data-value" style="font-size:4rem; color:var(--accent);"><span id="c-impact-num"></span><small style="font-size:1rem; margin-left:10px;">g</small></div>
+                  <p id="c-impact-text" style="font-size:0.8rem; opacity:0.6; line-height:2;"></p>
+                  <div style="margin-top:auto; border-top:1px solid rgba(255,255,255,0.1); padding-top:30px;">
+                      <b id="c-s-name" style="color:var(--gold);"></b>
+                      <p id="c-s-type" style="font-size:0.7rem; opacity:0.5; margin-top:5px;"></p>
+                  </div>
+                  <button onclick="window.closeReward(event)" class="btn-ignite" style="margin-top:30px; padding:15px; font-size:0.8rem; letter-spacing:5px;">收下記憶</button>
+              </div>
+          </div>
+      </div>
+  </div>
+
+  <!-- 6. 主祭壇介面 -->
+  <div id="app-shell">
+    <header class="header">
+      <p>THE SEA STARTS FROM YOU</p>
+      <h1>這片海，離我多遠？</h1>
+    </header>
+
+    <main class="main-ritual-zone">
+      <!-- 左：行動祭壇 -->
+      <section class="altar-panel">
+        <span class="ritual-title">RITUAL ACTION / 守護行動</span>
+        
+        <div class="task-icons">
+          <label class="icon-option" id="task-cup">
+            <input type="checkbox" value="cup" hidden onchange="this.parentElement.classList.toggle('active')">
+            <i class="fa-solid fa-mug-hot"></i><span>自備杯</span>
+          </label>
+          <label class="icon-option" id="task-bag">
+            <input type="checkbox" value="bag" hidden onchange="this.parentElement.classList.toggle('active')">
+            <i class="fa-solid fa-bag-shopping"></i><span>自備袋</span>
+          </label>
+          <label class="icon-option" id="task-utensil">
+            <input type="checkbox" value="utensil" hidden onchange="this.parentElement.classList.toggle('active')">
+            <i class="fa-solid fa-utensils"></i><span>自備餐具</span>
+          </label>
+        </div>
+
+        <select id="coastSelect" class="select-ritual"></select>
+        
+        <div class="route-display" style="background:none; border:none; padding:0; margin-bottom:40px;">
+          <p id="routeText" style="font-size:0.8rem; opacity:0.6; margin-bottom:15px;"></p>
+          <div class="bar-bg"><div id="path-fill" class="bar-fill" style="width:0%;"></div></div>
+        </div>
+
+        <button id="actBtn" onclick="window.startRitual()" class="btn-ignite">啟動儀式</button>
+      </section>
+
+      <!-- 右：觀測數據 -->
+      <aside>
+        <section class="altar-panel" style="padding:30px;">
+          <div class="data-item">
+            <span class="data-label">STREAK / 連續守護</span>
+            <div style="display:flex; align-items:baseline; gap:10px;">
+                <b class="data-value" id="streakText">0</b><span style="font-size:0.7rem; opacity:0.4;">DAYS</span>
+            </div>
+            <div id="stampRow" class="stamps" style="margin-top:15px;"></div>
+          </div>
+
+          <div class="data-item" style="border-top:1px solid rgba(255,255,255,0.05); padding-top:25px;">
+            <span class="data-label">GLOBAL IMPACT / 全體影響</span>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                <div><b id="kpiActions" style="font-size:1.2rem;">0</b><br><small style="font-size:0.6rem; opacity:0.4;">ACTIONS</small></div>
+                <div><b id="kpiGram" style="font-size:1.2rem;">0</b><br><small style="font-size:0.6rem; opacity:0.4;">REDUCTION(g)</small></div>
+            </div>
+          </div>
+
+          <div class="coast-bar-wrap" id="coastBar"></div>
+        </section>
+
+        <section class="altar-panel" style="margin-top:30px; padding:30px;">
+           <span class="data-label">SYMBIOSIS SHOPS / 共生店家</span>
+           <div id="shopList" class="shop-list" style="max-height:200px;"></div>
+        </aside>
+    </main>
+
+    <footer class="header" style="margin-top:100px; opacity:0.3;">
+       <div style="width:30px; height:1px; background:#fff; margin: 0 auto 20px;"></div>
+       <p style="font-size:0.6rem;">© 2026 SYMBIOSIS PROJECT</p>
+    </footer>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="/firebase-config.js"></script>
+  <script src="/auth.js"></script>
+  <script src="/db.js"></script>
+  <script src="/idle.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>

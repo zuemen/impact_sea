@@ -1,0 +1,26 @@
+[
+  {
+    "id": "p1",
+    "coastId": "kl1",
+    "photoUrl": "https://images.unsplash.com/photo-1505118380757-91f5f45d8de4?w=1200",
+    "locationName": "基隆外木山",
+    "nickname": "Mina",
+    "story": "第一次帶爸媽去北海岸看日落，才發現海離我們這麼近。"
+  },
+  {
+    "id": "p2",
+    "coastId": "td1",
+    "photoUrl": "https://images.unsplash.com/photo-1520113526514-99dec0cb393d?w=1200",
+    "locationName": "台東三仙台",
+    "nickname": "YJ",
+    "story": "孩子問我為什麼要自備餐具，我說因為這片海值得。"
+  },
+  {
+    "id": "p3",
+    "coastId": "ph1",
+    "photoUrl": "https://images.unsplash.com/photo-1538332576228-eb5b4c4de6f5?w=1200",
+    "locationName": "澎湖七美",
+    "nickname": "Ariel",
+    "story": "這裡是我第一次看到海龜的地方，想把它留給下一代。"
+  }
+]

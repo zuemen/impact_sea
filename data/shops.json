@@ -1,0 +1,52 @@
+[
+  {
+    "id": "s1",
+    "coastId": "kl1",
+    "name": "小島咖啡",
+    "type": "Friendly Cafe",
+    "region": "north",
+    "discount": true,
+    "noSingleUse": true,
+    "note": "自備杯折 10 元"
+  },
+  {
+    "id": "s2",
+    "coastId": "kl1",
+    "name": "潮見食堂",
+    "type": "Eco Bistro",
+    "region": "north",
+    "discount": false,
+    "noSingleUse": true,
+    "note": "內用不主動提供一次性餐具"
+  },
+  {
+    "id": "s3",
+    "coastId": "td1",
+    "name": "成功民宿",
+    "type": "Green Inn",
+    "region": "east",
+    "discount": true,
+    "noSingleUse": false,
+    "note": "續住不更換備品可折扣"
+  },
+  {
+    "id": "s4",
+    "coastId": "td1",
+    "name": "海光早餐",
+    "type": "Local Food",
+    "region": "east",
+    "discount": false,
+    "noSingleUse": true,
+    "note": "自備餐盒可外帶"
+  },
+  {
+    "id": "s5",
+    "coastId": "ph1",
+    "name": "七美舍",
+    "type": "Local Hub",
+    "region": "island",
+    "discount": true,
+    "noSingleUse": true,
+    "note": "自備容器加贈飲品"
+  }
+]

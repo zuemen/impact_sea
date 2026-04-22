@@ -1,0 +1,14 @@
+[
+  {
+    "id": "sub_seed_1",
+    "createdAt": "2026-03-02T10:20:00.000Z",
+    "nickname": "OceanKid",
+    "photoUrl": "https://images.unsplash.com/photo-1489515217757-5fd1be406fef?w=1200",
+    "locationName": "鼻頭角",
+    "coastId": "kl1",
+    "story": "這是我和家人第一次一起淨灘後拍下的海。",
+    "ig": "@ocean_kid",
+    "consent": true,
+    "status": "approved"
+  }
+]

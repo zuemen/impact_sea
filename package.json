@@ -1,0 +1,10 @@
+{
+  "name": "impact-sea",
+  "version": "1.0.0",
+  "description": "《這片海，離我多遠？》 Node.js MVP",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "license": "MIT"
+}

@@ -1,0 +1,193 @@
+/* 
+  SYMBIOSIS IMPACT SEA 2.0 - ULTIMATE IMMERSIVE STYLE
+  主題：深海流動祭壇 (精修版)
+*/
+
+:root {
+  --m-black: #000205;
+  --m-blue: #000810;
+  --accent: #00f2ff;
+  --accent-dim: rgba(0, 242, 255, 0.1);
+  --gold: #feb47b;
+  --text-main: #ffffff;
+  --text-dim: rgba(255, 255, 255, 0.4);
+  --glow: 0 0 20px rgba(0, 242, 255, 0.3);
+  --glass: rgba(255, 255, 255, 0.03);
+  --glass-border: rgba(255, 255, 255, 0.08);
+}
+
+@keyframes liquid-drift {
+  0% { border-radius: 40% 60% 60% 40% / 40% 40% 60% 60%; transform: rotate(0deg); }
+  50% { border-radius: 60% 40% 40% 60% / 60% 60% 40% 40%; }
+  100% { border-radius: 40% 60% 60% 40% / 40% 40% 60% 60%; transform: rotate(360deg); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.5; filter: blur(40px); }
+  50% { opacity: 0.8; filter: blur(60px); }
+}
+
+@keyframes ripple {
+  0% { transform: scale(1); opacity: 0.5; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+/* --- 基礎清理 --- */
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; border: none; outline: none; }
+html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: var(--m-black); }
+
+body {
+  color: var(--text-main);
+  font-family: 'Noto Serif TC', serif;
+  overflow-x: hidden;
+  line-height: 1.6;
+}
+
+/* --- 深海背景 --- */
+.sea-bg {
+  position: fixed; inset: 0; z-index: -1;
+  background: linear-gradient(to bottom, #000308, #001a2e);
+  overflow: hidden;
+}
+.liquid-blob {
+  position: absolute; top: -20%; left: -10%; width: 80vw; height: 80vw;
+  background: radial-gradient(circle, rgba(0, 242, 255, 0.05), transparent);
+  animation: liquid-drift 20s infinite linear, pulse-glow 8s infinite ease-in-out;
+}
+
+/* --- 儀式入口 --- */
+#mirror-gate {
+  position: fixed; inset: 0; z-index: 10000;
+  background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.mirror-portal {
+  width: 220px; height: 220px; border-radius: 50%;
+  background: url('https://images.unsplash.com/photo-1439405326854-014607f694d7?w=1200&q=80') center/cover;
+  position: relative; cursor: pointer; transition: 0.8s;
+  box-shadow: 0 0 50px rgba(0, 242, 255, 0.1);
+}
+.mirror-portal:hover { transform: scale(1.05); box-shadow: 0 0 100px rgba(0, 242, 255, 0.3); }
+.portal-ring { position: absolute; inset: -5px; border: 1px solid var(--accent); border-radius: 50%; animation: ripple 3s infinite ease-out; }
+.portal-text { margin-top: 50px; letter-spacing: 0.8em; font-weight: 300; opacity: 0.5; font-size: 0.7rem; }
+
+/* --- 主應用結構 --- */
+#app-shell {
+  width: 100%; max-width: 1200px; margin: 0 auto;
+  padding: 80px 30px; opacity: 0;
+}
+
+.header { text-align: center; margin-bottom: 80px; }
+.header h1 { font-size: 2.8rem; letter-spacing: 0.4em; font-weight: 900; margin: 0; }
+.header p { color: var(--gold); letter-spacing: 0.3em; font-size: 0.75rem; margin-top: 10px; }
+
+.main-ritual-zone {
+  display: grid; grid-template-columns: 1.4fr 1fr; gap: 50px;
+}
+@media (max-width: 950px) { .main-ritual-zone { grid-template-columns: 1fr; } }
+
+/* --- 沉浸式面板 --- */
+.altar-panel {
+  background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.06);
+  padding: 45px; backdrop-filter: blur(30px); position: relative;
+}
+.altar-panel::before { content: ''; position: absolute; top: 0; left: 0; width: 15px; height: 1px; background: var(--accent); }
+
+.ritual-title { font-size: 0.8rem; letter-spacing: 4px; color: var(--accent); margin-bottom: 35px; display: block; opacity: 0.7; }
+
+/* --- 任務圖標 --- */
+.task-icons { display: flex; gap: 20px; margin-bottom: 40px; }
+.icon-option {
+  flex: 1; text-align: center; cursor: pointer; padding: 25px 10px;
+  border: 1px solid rgba(255,255,255,0.1); transition: 0.4s;
+}
+.icon-option i { font-size: 2rem; display: block; margin-bottom: 15px; opacity: 0.2; transition: 0.3s; }
+.icon-option span { font-size: 0.75rem; letter-spacing: 2px; }
+.icon-option.active { border-color: var(--accent); background: rgba(0, 242, 255, 0.08); color: var(--accent); }
+.icon-option.active i { opacity: 1; transform: translateY(-5px); }
+
+/* --- 選擇與按鈕 --- */
+.select-ritual {
+  width: 100%; background: transparent; border-bottom: 1px solid rgba(255,255,255,0.15);
+  color: #fff; padding: 18px 0; font-family: inherit; font-size: 1.1rem; margin-bottom: 40px;
+  cursor: pointer;
+}
+.btn-ignite {
+  width: 100%; background: var(--accent); color: #000; padding: 25px;
+  font-weight: 900; letter-spacing: 1.2em; cursor: pointer; font-size: 1.1rem;
+  transition: 0.5s; box-shadow: 0 10px 40px rgba(0, 242, 255, 0.15);
+}
+.btn-ignite:hover { letter-spacing: 1.4em; filter: brightness(1.2); box-shadow: 0 0 60px rgba(0, 242, 255, 0.3); }
+
+/* --- 數據看板 --- */
+.data-item { margin-bottom: 30px; }
+.data-label { font-size: 0.65rem; opacity: 0.4; letter-spacing: 3px; display: block; margin-bottom: 12px; }
+.data-value { font-size: 2.8rem; font-family: 'Montserrat', sans-serif; font-weight: 900; color: var(--gold); }
+
+.stamps { display: flex; gap: 12px; margin-top: 20px; }
+.stamp {
+  width: 35px; height: 35px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.1);
+  display: grid; place-items: center; font-family: 'Montserrat', sans-serif; font-size: 0.75rem; color: rgba(255,255,255,0.15);
+}
+.stamp.active { border-color: var(--accent); background: rgba(0, 242, 255, 0.1); color: var(--accent); box-shadow: 0 0 15px rgba(0, 242, 255, 0.2); }
+
+.bar-bg { width: 100%; height: 1px; background: rgba(255,255,255,0.08); position: relative; margin: 10px 0; }
+.bar-fill { position: absolute; height: 100%; background: var(--accent); box-shadow: 0 0 10px var(--accent); transition: 1s ease-out; }
+
+/* --- 店家清單 (解決溢出) --- */
+.shop-list {
+  display: flex; flex-direction: column; gap: 25px;
+  max-height: 400px; overflow-y: auto; padding-right: 15px;
+}
+.shop-item {
+  border-left: 1px solid rgba(0, 242, 255, 0.15);
+  padding: 5px 0 5px 25px; transition: 0.3s;
+}
+.shop-item b {
+  font-size: 1rem; color: var(--accent); letter-spacing: 1px; display: block; margin-bottom: 5px;
+  overflow-wrap: break-word; word-break: break-word;
+}
+.shop-item p {
+  font-size: 0.75rem; color: var(--text-main); opacity: 0.5; line-height: 1.7; margin: 0;
+  overflow-wrap: break-word; word-break: break-word; white-space: normal;
+}
+.shop-item:hover { border-left-color: var(--accent); padding-left: 30px; background: rgba(0, 242, 255, 0.02); }
+
+/* --- 儀式動畫層 --- */
+#anim-overlay {
+  position: fixed; inset: 0; z-index: 9000;
+  background: #000; display: none; flex-direction: column; align-items: center; justify-content: center;
+}
+#narrative-box { width: 90%; max-width: 600px; text-align: center; }
+.narrative-line { font-size: 1.3rem; letter-spacing: 0.4em; line-height: 2.2; opacity: 0; margin-bottom: 25px; }
+
+/* --- 3D 卡片 --- */
+.stage-overlay {
+  position: fixed; inset: 0; z-index: 11000;
+  background: rgba(0,0,0,0.95); backdrop-filter: blur(20px);
+  display: none; align-items: center; justify-content: center; perspective: 1500px;
+}
+#card-3d { width: 340px; height: 520px; transform-style: preserve-3d; }
+.card-inner { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: 1s; }
+.card-face {
+  position: absolute; inset: 0; backface-visibility: hidden;
+  background: #fff; color: #111; border-radius: 4px; overflow: hidden;
+  box-shadow: 0 40px 100px rgba(0,0,0,0.7);
+}
+.face-back { transform: rotateY(180deg); background: var(--m-blue) !important; color: #fff !important; padding: 45px; display: flex; flex-direction: column; }
+.card-img-wrap { height: 280px; overflow: hidden; background: #000; }
+.card-img-wrap img { width: 100%; height: 100%; object-fit: cover; }
+.card-content { padding: 30px; }
+.card-content h3 { font-size: 1.6rem; margin: 0 0 12px; font-weight: 900; color: #000; }
+.card-content p { font-style: italic; color: #555; font-size: 0.9rem; line-height: 1.8; }
+
+/* --- 登入彈窗 --- */
+#auth-overlay { position: fixed; inset: 0; z-index: 20000; background: rgba(0,0,0,0.98); display: flex; align-items: center; justify-content: center; }
+.auth-box { width: 100%; max-width: 420px; padding: 60px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); text-align: center; }
+.input-altar { width: 100%; background: transparent; border-bottom: 1px solid rgba(255,255,255,0.2); padding: 15px 0; color: #fff; margin-bottom: 25px; font-family: inherit; font-size: 1rem; }
+
+/* --- 待機畫面 --- */
+#idle-screen { position: fixed; inset: 0; z-index: 30000; background: #000; display: none; align-items: center; justify-content: center; text-align: center; padding: 40px; cursor: pointer; }
+.idle-text { font-size: 1.8rem; color: var(--accent); line-height: 2; font-weight: 300; max-width: 800px; }
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-thumb { background: rgba(0, 242, 255, 0.3); border-radius: 10px; }
