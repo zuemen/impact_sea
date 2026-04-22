@@ -175,22 +175,23 @@ function showCard() {
   const stage = document.getElementById('reward-stage');
   stage.style.display = 'flex';
   
-  const r = state.reward;
-  const coast = state.coasts.find(c => c.id === state.currentCoastId);
+  const r = state.reward || {}; // 防錯：如果 r 是 null 也能運行
+  const coast = state.coasts.find(c => c.id === state.currentCoastId) || state.coasts[0];
 
   const img = document.getElementById('c-img');
-  img.src = r.photoUrl || coast.img;
+  // 優先順序：投稿照片 -> 內建照片 -> 海域預設風景
+  img.src = r.photoUrl || r.img || coast.img;
   img.onerror = () => { img.src = coast.img; };
 
-  document.getElementById('c-loc').innerText = r.locationName || coast.name;
-  document.getElementById('c-loc-tag').innerText = coast.tag;
-  document.getElementById('c-story').innerText = r.story || "感謝這份守護海洋的心意。";
+  document.getElementById('c-loc').innerText = r.locationName || r.name || coast.name;
+  document.getElementById('c-loc-tag').innerText = coast.tag || "台灣海域";
+  document.getElementById('c-story').innerText = r.story || "感謝這份守護海洋的心意。這片海域因為你的選擇而更清澈了一點。";
   document.getElementById('c-impact-num').innerText = (0.3 + Math.random()*0.3).toFixed(2);
   document.getElementById('c-impact-text').innerText = coast.trivia;
   
   const shop = state.shops.find(s => s.coastId === state.currentCoastId) || state.shops[0];
   document.getElementById('c-s-name').innerText = shop.name;
-  document.getElementById('c-s-type').innerText = shop.type + " ｜ " + shop.note;
+  document.getElementById('c-s-type').innerText = (shop.type || "友善店家") + " ｜ " + (shop.note || "自備折扣");
 
   gsap.fromTo("#card-3d", { scale: 0.3, opacity: 0, rotationY: 45 }, { scale: 1, opacity: 1, rotationY: 0, duration: 1, ease: "back.out(1.2)" });
 }

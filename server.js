@@ -182,8 +182,12 @@ function handleApi(req, res, urlObj) {
 
   if (pathname === "/api/photos/random" && method === "GET") {
     const coastId = urlObj.searchParams.get("coastId");
-    const pool = coastId ? photos.filter((p) => p.coastId === coastId) : photos;
-    return sendJson(res, 200, { item: randomItem(pool.length ? pool : photos) });
+    // 結合內建照片與審核通過的投稿
+    const approvedSubs = submissions.filter(s => s.status === "approved");
+    const combinedPool = [...photos, ...approvedSubs];
+    
+    const pool = coastId ? combinedPool.filter((p) => p.coastId === coastId) : combinedPool;
+    return sendJson(res, 200, { item: randomItem(pool.length ? pool : combinedPool) });
   }
 
   if (pathname === "/api/metrics" && method === "GET") {
@@ -199,6 +203,9 @@ function handleApi(req, res, urlObj) {
           return sendJson(res, 400, { error: "Missing required fields." });
         }
         const today = dateKey();
+        
+        // --- 測試期間暫時關閉每日限制，方便您連續測試 ---
+        /*
         const already = actions.find((a) => a.deviceId === deviceId && a.dateKey === today);
         if (already) {
           return sendJson(res, 409, {
@@ -206,6 +213,7 @@ function handleApi(req, res, urlObj) {
             progress: buildProgress(deviceId, actions)
           });
         }
+        */
         const reductionGram = Number((0.3 + Math.random() * 0.5).toFixed(2));
         const action = {
           id: `act_${Date.now()}`,
