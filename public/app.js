@@ -4,11 +4,11 @@ gsap.registerPlugin(MotionPathPlugin);
 
 const state = {
   coasts: [
-    { id:'kl1', name:'基隆嶼海域', tag:'北部海域', cityRoute:'城市排水孔 → 基隆河 → 淡水河口 → 基隆嶼', trivia:'龍蝦與黑鳶的家，也是台北人的後花園。', img:'https://images.unsplash.com/photo-1505118380757-91f5f45d8de4?w=1000&q=80' },
-    { id:'td1', name:'台東三仙台', tag:'東部海域', cityRoute:'部落排水口 → 卑南溪 → 太平洋 → 三仙台', trivia:'擁有台灣最美的八拱橋，是第一道曙光照耀之地。', img:'https://images.unsplash.com/photo-1520113526514-99dec0cb393d?w=1000&q=80' },
-    { id:'ph1', name:'澎湖七美', tag:'離島海域', cityRoute:'城市水溝 → 台灣海峽 → 澎湖群島 → 七美', trivia:'雙心石滬的古老智慧，需要我們這一代繼續傳承。', img:'https://images.unsplash.com/photo-1538332576228-eb5b4c4de6f5?w=1000&q=80' },
-    { id:'hl1', name:'花蓮七星潭', tag:'東部海域', cityRoute:'美崙溪 → 太平洋 → 七星潭月牙灣', trivia:'湛藍的礫石海灘，是東台灣最純淨的呼吸。', img:'https://images.unsplash.com/photo-1621539201550-20227918a3be?w=1000&q=80' },
-    { id:'kt1', name:'墾丁後壁湖', tag:'南部海域', cityRoute:'恆春水溝 → 巴士海峽 → 後壁湖珊瑚礁', trivia:'台灣最具代表性的珊瑚礁棲息地，潛水者的天堂。', img:'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=1000&q=80' }
+    { id:'kl1', name:'基隆嶼海域', tag:'北部海域', cityRoute:'城市排水孔 → 基隆河 → 淡水河口 → 基隆嶼', trivia:'龍蝦與黑鳶的家，也是台北人的後花園。', img:'https://images.unsplash.com/photo-1518837695005-2083093ee35b?auto=format&fit=crop&q=80&w=1200' },
+    { id:'td1', name:'台東三仙台', tag:'東部海域', cityRoute:'部落排水口 → 卑南溪 → 太平洋 → 三仙台', trivia:'擁有台灣最美的八拱橋，是第一道曙光照耀之地。', img:'https://images.unsplash.com/photo-1542152631-507977464098?auto=format&fit=crop&q=80&w=1200' },
+    { id:'ph1', name:'澎湖七美', tag:'離島海域', cityRoute:'城市水溝 → 台灣海峽 → 澎湖群島 → 七美', trivia:'雙心石滬的古老智慧，需要我們這一代繼續傳承。', img:'https://images.unsplash.com/photo-1505228395891-9a51e7e86bf6?auto=format&fit=crop&q=80&w=1200' },
+    { id:'hl1', name:'花蓮七星潭', tag:'東部海域', cityRoute:'美崙溪 → 太平洋 → 七星潭月牙灣', trivia:'湛藍的礫石海灘，是東台灣最純淨的呼吸。', img:'https://images.unsplash.com/photo-1506466010722-395aa2bef877?auto=format&fit=crop&q=80&w=1200' },
+    { id:'kt1', name:'墾丁後壁湖', tag:'南部海域', cityRoute:'恆春水溝 → 巴士海峽 → 後壁湖珊瑚礁', trivia:'台灣最具代表性的珊瑚礁棲息地，潛水者的天堂。', img:'https://images.unsplash.com/photo-1559128010-7c1ad6e1b6a5?auto=format&fit=crop&q=80&w=1200' }
   ],
   shops: [
     { id:'s1', coastId:'kl1', name:'小島咖啡', type:'友善咖啡店', note:'自備杯折 10 元' },
@@ -135,22 +135,22 @@ async function startRitual() {
     gsap.set(photon, { top: "100%", left: "50%", scale: 1, opacity: 1 });
     
     const tl = gsap.timeline();
-    gsap.to("#line-1", { opacity: 1, y: -20, duration: 1 });
+    gsap.to("#line-1", { opacity: 1, y: -20, duration: 1.5 });
     
     tl.to(photon, { 
       motionPath: { path: "#river-path", align: "#river-path", alignOrigin: [0.5, 0.5] },
-      duration: 3, ease: "power2.inOut" 
+      duration: 5, ease: "power2.inOut" 
     })
     .add(() => {
-      gsap.to("#line-1", { opacity: 0, duration: 0.5 });
-      gsap.to("#line-2", { opacity: 1, y: -20, delay: 0.5, duration: 1 });
+      gsap.to("#line-1", { opacity: 0, duration: 1 });
+      gsap.to("#line-2", { opacity: 1, y: -20, delay: 0.8, duration: 1.5 });
     })
-    .to(photon, { scale: 100, opacity: 0, duration: 1 })
+    .to(photon, { scale: 150, opacity: 0, duration: 2 })
     .add(() => {
-      gsap.to("#line-2", { opacity: 0, duration: 0.5 });
+      gsap.to("#line-2", { opacity: 0, duration: 1 });
       const line3 = document.getElementById('line-3');
       line3.innerText = "已連結至 " + coast.name;
-      line3.style.opacity = 1;
+      gsap.to(line3, { opacity: 1, duration: 1.5 });
       document.getElementById('btn-reveal-final').style.display = 'block';
     });
 
@@ -209,6 +209,34 @@ window.closeReward = (e) => {
     el.actBtn.disabled = false;
     document.querySelectorAll(".task-icons input").forEach(i => { i.checked = false; i.parentElement.classList.remove('active'); });
   }});
+};
+
+window.submitObservation = async () => {
+  const userId = auth.currentUser ? auth.currentUser.uid : 'demo_user';
+  const data = {
+    photoUrl: document.getElementById('sub-url').value,
+    nickname: document.getElementById('sub-nickname').value,
+    locationName: document.getElementById('sub-location').value,
+    story: document.getElementById('sub-story').value,
+    consent: document.getElementById('sub-consent').checked,
+    coastId: state.currentCoastId
+  };
+
+  const status = document.getElementById('sub-status');
+  if (!data.photoUrl || !data.nickname || !data.locationName || !data.story || !data.consent) {
+    status.innerText = "請填寫完整資訊並勾選同意。";
+    return;
+  }
+
+  status.innerText = "正在傳送記憶...";
+  try {
+    await DB.submitPhoto(userId, data);
+    status.innerText = "投稿成功！感謝你的觀察。";
+    document.getElementById('submission-form').reset();
+  } catch (err) {
+    status.innerText = "傳送失敗，請稍後再試。";
+    console.error(err);
+  }
 };
 
 function renderShops() {
