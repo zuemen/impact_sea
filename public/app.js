@@ -4,10 +4,10 @@ gsap.registerPlugin(MotionPathPlugin);
 
 const state = {
   coasts: [
-    { id:'kl1', name:'基隆嶼海域', tag:'北部海域', cityRoute:'城市排水孔 → 基隆河 → 淡水河口 → 基隆嶼', trivia:'龍蝦與黑鳶的家，也是台北人的後花園。', img:'https://images.unsplash.com/photo-1518837695005-2083093ee35b?auto=format&fit=crop&q=80&w=1200' },
-    { id:'td1', name:'台東三仙台', tag:'東部海域', cityRoute:'部落排水口 → 卑南溪 → 太平洋 → 三仙台', trivia:'擁有台灣最美的八拱橋，是第一道曙光照耀之地。', img:'https://images.unsplash.com/photo-1542152631-507977464098?auto=format&fit=crop&q=80&w=1200' },
+    { id:'kl1', name:'基隆嶼海域', tag:'北部海域', cityRoute:'城市排水孔 → 基隆河 → 淡水河口 → 基隆嶼', trivia:'龍蝦與黑鳶的家，也是台北人的後花園。', img:'https://images.unsplash.com/photo-1542332213-9b5a5a3fad35?auto=format&fit=crop&q=80&w=1200' },
+    { id:'td1', name:'台東三仙台', tag:'東部海域', cityRoute:'部落排水口 → 卑南溪 → 太平洋 → 三仙台', trivia:'擁有台灣最美的八拱橋，是第一道曙光照耀之地。', img:'https://images.unsplash.com/photo-1506466010722-395aa2bef877?auto=format&fit=crop&q=80&w=1200' },
     { id:'ph1', name:'澎湖七美', tag:'離島海域', cityRoute:'城市水溝 → 台灣海峽 → 澎湖群島 → 七美', trivia:'雙心石滬的古老智慧，需要我們這一代繼續傳承。', img:'https://images.unsplash.com/photo-1505228395891-9a51e7e86bf6?auto=format&fit=crop&q=80&w=1200' },
-    { id:'hl1', name:'花蓮七星潭', tag:'東部海域', cityRoute:'美崙溪 → 太平洋 → 七星潭月牙灣', trivia:'湛藍的礫石海灘，是東台灣最純淨的呼吸。', img:'https://images.unsplash.com/photo-1506466010722-395aa2bef877?auto=format&fit=crop&q=80&w=1200' },
+    { id:'hl1', name:'花蓮七星潭', tag:'東部海域', cityRoute:'美崙溪 → 太平洋 → 七星潭月牙灣', trivia:'湛藍的礫石海灘，是東台灣最純淨的呼吸。', img:'https://images.unsplash.com/photo-1542152631-507977464098?auto=format&fit=crop&q=80&w=1200' },
     { id:'kt1', name:'墾丁後壁湖', tag:'南部海域', cityRoute:'恆春水溝 → 巴士海峽 → 後壁湖珊瑚礁', trivia:'台灣最具代表性的珊瑚礁棲息地，潛水者的天堂。', img:'https://images.unsplash.com/photo-1559128010-7c1ad6e1b6a5?auto=format&fit=crop&q=80&w=1200' }
   ],
   shops: [
@@ -121,12 +121,17 @@ async function startRitual() {
 
   state.isDoingRitual = true;
   el.actBtn.disabled = true;
-  el.actionStatus.innerText = "";
+  el.actionStatus.innerText = "正在儲存守護意志...";
 
   try {
+    // 1. 先儲存行動 (避免動畫做完才發現報錯)
+    await DB.saveAction(userId, { coastId: state.currentCoastId, items: checked });
+    
+    // 2. 獲取獎勵與背景
     state.reward = await DB.getRandomReward(state.currentCoastId);
     const coast = state.coasts.find(c => c.id === state.currentCoastId);
 
+    // 3. 啟動動畫
     const ov = document.getElementById('anim-overlay');
     ov.style.display = 'flex';
     ov.style.opacity = 1;
@@ -154,11 +159,13 @@ async function startRitual() {
       document.getElementById('btn-reveal-final').style.display = 'block';
     });
 
-    DB.saveAction(userId, { coastId: state.currentCoastId, items: checked }).then(() => refreshUI());
+    refreshUI();
 
   } catch (err) {
+    el.actionStatus.innerText = err.message || "儀式啟動失敗，請稍後再試。";
     state.isDoingRitual = false;
     el.actBtn.disabled = false;
+    document.getElementById('anim-overlay').style.display = 'none';
   }
 }
 
