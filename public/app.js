@@ -45,34 +45,15 @@ window.initApp = async () => {
   if (!user && !IS_DEMO) return;
 
   gsap.to(el.appShell, { opacity: 1, duration: 1.5, ease: "power2.out" });
-  if (IS_DEMO) {
-    const badge = document.getElementById('demo-badge');
-    if (badge) badge.style.display = 'block';
-  }
-
-  loadInitialData();
+  
   refreshUI();
 };
-
-function loadInitialData() {
-  el.coastSelect.innerHTML = state.coasts
-    .map((c) => `<option value="${c.id}">${c.name}</option>`)
-    .join("");
-  state.currentCoastId = state.coasts[0].id;
-  updateContext();
-}
 
 async function refreshUI() {
   const userId = auth.currentUser ? auth.currentUser.uid : 'demo_user';
   updateUserProgress(userId);
   renderShops();
   loadMetrics();
-}
-
-function updateContext() {
-  const coast = state.coasts.find((c) => c.id === state.currentCoastId);
-  el.routeText.textContent = coast.cityRoute;
-  el.pathFill.style.width = (Math.random() * 50 + 20) + '%';
 }
 
 async function updateUserProgress(userId) {
@@ -93,7 +74,7 @@ async function updateUserProgress(userId) {
 
 window.enterApp = () => {
   const IS_DEMO = firebaseConfig.apiKey === "YOUR_API_KEY";
-  gsap.to("#mirror-gate", { opacity: 0, scale: 1.2, duration: 1, onComplete: () => {
+  gsap.to("#mirror-gate", { opacity: 0, scale: 1.2, duration: 1.5, onComplete: () => {
     document.getElementById('mirror-gate').style.display = 'none';
     if (!auth.currentUser && !IS_DEMO) {
       document.getElementById('auth-overlay').style.display = 'flex';
@@ -119,17 +100,29 @@ async function startRitual() {
     return;
   }
 
+  // 隨機選取一片海域
+  const randomCoast = state.coasts[Math.floor(Math.random() * state.coasts.length)];
+  state.currentCoastId = randomCoast.id;
+
   state.isDoingRitual = true;
   el.actBtn.disabled = true;
-  el.actionStatus.innerText = "正在儲存守護意志...";
+  el.actionStatus.innerText = "正在感應海洋連結...";
 
   try {
-    // 1. 先儲存行動 (避免動畫做完才發現報錯)
+    // 1. 先儲存行動
     await DB.saveAction(userId, { coastId: state.currentCoastId, items: checked });
     
     // 2. 獲取獎勵與背景
     state.reward = await DB.getRandomReward(state.currentCoastId);
-    const coast = state.coasts.find(c => c.id === state.currentCoastId);
+    const coast = randomCoast;
+
+    // 更新路徑顯示文字
+    const routeContainer = document.getElementById('route-container');
+    const routeText = document.getElementById('routeText');
+    const pathFill = document.getElementById('path-fill');
+    routeText.textContent = coast.cityRoute;
+    pathFill.style.width = '0%';
+    routeContainer.style.display = 'block';
 
     // 3. 啟動動畫
     const ov = document.getElementById('anim-overlay');
@@ -149,12 +142,13 @@ async function startRitual() {
     .add(() => {
       gsap.to("#line-1", { opacity: 0, duration: 1 });
       gsap.to("#line-2", { opacity: 1, y: -20, delay: 0.8, duration: 1.5 });
+      gsap.to(pathFill, { width: (Math.random() * 50 + 40) + '%', duration: 4, ease: "power1.inOut" });
     })
     .to(photon, { scale: 150, opacity: 0, duration: 2 })
     .add(() => {
       gsap.to("#line-2", { opacity: 0, duration: 1 });
       const line3 = document.getElementById('line-3');
-      line3.innerText = "已連結至 " + coast.name;
+      line3.innerText = "已隨機連結至 " + coast.name;
       gsap.to(line3, { opacity: 1, duration: 1.5 });
       document.getElementById('btn-reveal-final').style.display = 'block';
     });

@@ -116,9 +116,11 @@
           </label>
         </div>
 
-        <select id="coastSelect" class="select-ritual"></select>
+        <div id="random-coast-indicator" style="margin-bottom: 40px; padding: 20px; border: 1px dashed var(--sea-teal); border-radius: 8px; text-align: center;">
+          <p style="font-size: 0.8rem; color: var(--sea-teal); letter-spacing: 2px; margin: 0;">儀式將隨機連結至一片台灣海域</p>
+        </div>
         
-        <div class="route-display" style="margin-bottom:60px;">
+        <div class="route-display" style="margin-bottom:60px; display: none;" id="route-container">
           <p id="routeText" style="font-size:0.85rem; color:var(--sea-slate); margin-bottom:20px; font-weight:300;"></p>
           <div class="bar-bg"><div id="path-fill" class="bar-fill" style="width:0%;"></div></div>
         </div>
