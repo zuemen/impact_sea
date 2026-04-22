@@ -32,9 +32,9 @@
       <p style="letter-spacing: 5px; margin-bottom: 40px; text-transform: uppercase; font-size: 0.7rem; color: var(--sea-teal);">Identification</p>
       <h2 style="font-weight: 200; margin-bottom: 40px;">身分標記</h2>
       <form id="auth-form">
-        <input type="email" id="auth-email" class="input-altar" placeholder="Email">
-        <input type="password" id="auth-pw" class="input-altar" placeholder="Password">
-        <button type="submit" class="btn-ignite" style="margin-top: 30px;">Confirm</button>
+        <input type="email" id="auth-email" class="input-altar" placeholder="電子信箱">
+        <input type="password" id="auth-pw" class="input-altar" placeholder="密碼">
+        <button type="submit" class="btn-ignite" style="margin-top: 30px;">確認登入</button>
       </form>
       <p id="auth-error" style="color: var(--sea-slate); font-size: 0.7rem; margin-top: 20px;"></p>
     </div>
@@ -89,10 +89,10 @@
   <!-- 6. 主祭壇介面 -->
   <div id="app-shell">
     <header class="header">
-      <p>The sea starts from you</p>
-      <h1>Every city is<br>connected to a sea.</h1>
-      <p style="color: var(--sea-slate); text-transform: none; font-weight: 300; font-size: 1.1rem; margin-top: 30px; letter-spacing: 0;">
-        Beneath the concrete, an invisible network flows. Your street is a tributary. We are closer to the deep than we realize.
+      <p>海洋，從你的選擇開始</p>
+      <h1>這片海，<br>離我多遠？</h1>
+      <p style="color: var(--sea-slate); text-transform: none; font-weight: 300; font-size: 1.1rem; margin-top: 30px; letter-spacing: 0; line-height: 1.8;">
+        在水泥建築之下，流動著看不見的網路。<br>你所在的街道，就是海洋的支流。
       </p>
     </header>
 
@@ -133,7 +133,7 @@
           <div class="data-item">
             <span class="data-label">Streak / 連續守護</span>
             <div style="display:flex; align-items:baseline; gap:15px;">
-                <b class="data-value" id="streakText">0</b><span style="font-size:0.8rem; color:var(--sea-slate); font-weight:300;">DAYS</span>
+                <b class="data-value" id="streakText">0</b><span style="font-size:0.8rem; color:var(--sea-slate); font-weight:300;">天數</span>
             </div>
             <div id="stampRow" class="stamps"></div>
           </div>
@@ -141,8 +141,8 @@
           <div class="data-item" style="border-top:1px solid var(--glass-border); padding-top:40px;">
             <span class="data-label">Global Impact / 全體影響</span>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
-                <div><b id="kpiActions" style="font-size:1.8rem; font-weight:200;">0</b><br><small style="font-size:0.6rem; color:var(--sea-slate); letter-spacing:2px; text-transform:uppercase;">Actions</small></div>
-                <div><b id="kpiGram" style="font-size:1.8rem; font-weight:200;">0</b><br><small style="font-size:0.6rem; color:var(--sea-slate); letter-spacing:2px; text-transform:uppercase;">Reduction(g)</small></div>
+                <div><b id="kpiActions" style="font-size:1.8rem; font-weight:200;">0</b><br><small style="font-size:0.6rem; color:var(--sea-slate); letter-spacing:2px; text-transform:uppercase;">守護行動</small></div>
+                <div><b id="kpiGram" style="font-size:1.8rem; font-weight:200;">0</b><br><small style="font-size:0.6rem; color:var(--sea-slate); letter-spacing:2px; text-transform:uppercase;">減塑估算(g)</small></div>
             </div>
           </div>
 
@@ -156,37 +156,37 @@
       </aside>
     </main>
 
-    <!-- 7. 投稿區域 (整合自 seatest-main) -->
+    <!-- 7. 投稿區域 -->
     <section class="altar-panel" style="margin-top:100px; max-width:800px; margin-left:auto; margin-right:auto;">
         <span class="ritual-title">Contribute / 公民投稿</span>
         <h2 style="font-weight:200; margin-bottom:15px;">台灣海岸圖鑑共創</h2>
         <p style="color:var(--sea-slate); font-size:0.9rem; font-weight:300; margin-bottom:50px;">分享你安靜觀察海岸的瞬間，讓你的記憶成為下一位守護者的獎勵。</p>
         
-        <form id="submission-form" class="shop-list" style="max-height:none;">
-            <div style="border-bottom: 1px solid var(--glass-border); padding-bottom:10px; margin-bottom:20px;">
-                <label style="font-size:0.6rem; color:var(--sea-teal); letter-spacing:3px; text-transform:uppercase; display:block; margin-bottom:10px;">Photo URL</label>
-                <input type="text" id="sub-url" placeholder="https://..." class="input-altar" style="border:none; margin-bottom:0; font-size:0.9rem;">
+        <form id="submission-form" style="display: flex; flex-direction: column; gap: 20px;">
+            <div style="border-bottom: 1px solid var(--glass-border); padding-bottom:5px;">
+                <label style="font-size:0.6rem; color:var(--sea-teal); letter-spacing:3px; text-transform:uppercase; display:block; margin-bottom:5px;">照片網址 (Photo URL)</label>
+                <input type="text" id="sub-url" placeholder="請貼上照片連結..." class="input-altar" style="border:none; margin-bottom:0; font-size:0.9rem; background: transparent; color: var(--sea-sand); width: 100%;">
             </div>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:30px;">
-                <div style="border-bottom: 1px solid var(--glass-border); padding-bottom:10px;">
-                    <label style="font-size:0.6rem; color:var(--sea-teal); letter-spacing:3px; text-transform:uppercase; display:block; margin-bottom:10px;">Nickname</label>
-                    <input type="text" id="sub-nickname" placeholder="Your name" class="input-altar" style="border:none; margin-bottom:0; font-size:0.9rem;">
+                <div style="border-bottom: 1px solid var(--glass-border); padding-bottom:5px;">
+                    <label style="font-size:0.6rem; color:var(--sea-teal); letter-spacing:3px; text-transform:uppercase; display:block; margin-bottom:5px;">你的暱稱</label>
+                    <input type="text" id="sub-nickname" placeholder="如何稱呼你？" class="input-altar" style="border:none; margin-bottom:0; font-size:0.9rem; background: transparent; color: var(--sea-sand); width: 100%;">
                 </div>
-                <div style="border-bottom: 1px solid var(--glass-border); padding-bottom:10px;">
-                    <label style="font-size:0.6rem; color:var(--sea-teal); letter-spacing:3px; text-transform:uppercase; display:block; margin-bottom:10px;">Location Name</label>
-                    <input type="text" id="sub-location" placeholder="e.g., 七星潭" class="input-altar" style="border:none; margin-bottom:0; font-size:0.9rem;">
+                <div style="border-bottom: 1px solid var(--glass-border); padding-bottom:5px;">
+                    <label style="font-size:0.6rem; color:var(--sea-teal); letter-spacing:3px; text-transform:uppercase; display:block; margin-bottom:5px;">拍攝地點</label>
+                    <input type="text" id="sub-location" placeholder="例如：七星潭、三仙台..." class="input-altar" style="border:none; margin-bottom:0; font-size:0.9rem; background: transparent; color: var(--sea-sand); width: 100%;">
                 </div>
             </div>
-            <div style="border-bottom: 1px solid var(--glass-border); padding-bottom:10px; margin-top:20px;">
-                <label style="font-size:0.6rem; color:var(--sea-teal); letter-spacing:3px; text-transform:uppercase; display:block; margin-bottom:10px;">The Story (Max 100 characters)</label>
-                <textarea id="sub-story" placeholder="當你站在那裡時，你感受到了什麼？" class="input-altar" style="border:none; margin-bottom:0; font-size:0.9rem; width:100%; resize:none;" rows="2"></textarea>
+            <div style="border-bottom: 1px solid var(--glass-border); padding-bottom:5px;">
+                <label style="font-size:0.6rem; color:var(--sea-teal); letter-spacing:3px; text-transform:uppercase; display:block; margin-bottom:5px;">海岸故事 (限 100 字)</label>
+                <textarea id="sub-story" placeholder="當你站在那裡時，你感受到了什麼？" class="input-altar" style="border:none; margin-bottom:0; font-size:0.9rem; width:100%; resize:none; background: transparent; color: var(--sea-sand);" rows="2"></textarea>
             </div>
-            <div style="margin-top:30px; display:flex; align-items:center; gap:15px;">
-                <input type="checkbox" id="sub-consent" style="accent-color:var(--sea-teal);">
-                <label for="sub-consent" style="font-size:0.75rem; color:var(--sea-slate);">我同意公開此照片與故事於守護獎勵池中</label>
+            <div style="margin-top:10px; display:flex; align-items:center; gap:12px;">
+                <input type="checkbox" id="sub-consent" style="accent-color:var(--sea-teal); width: 16px; height: 16px;">
+                <label for="sub-consent" style="font-size:0.75rem; color:var(--sea-slate); cursor: pointer;">我同意公開此照片與故事於守護獎勵池中</label>
             </div>
-            <button type="button" onclick="window.submitObservation()" class="btn-ignite" style="margin-top:40px; align-self:flex-start;">Submit Observation</button>
-            <p id="sub-status" style="font-size:0.7rem; color:var(--sea-teal); margin-top:15px;"></p>
+            <button type="button" onclick="window.submitObservation()" class="btn-ignite" style="margin-top:20px; align-self:flex-start;">送出觀測投稿</button>
+            <p id="sub-status" style="font-size:0.7rem; color:var(--sea-teal); margin-top:15px; letter-spacing: 2px;"></p>
         </form>
     </section>
 

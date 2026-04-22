@@ -192,7 +192,25 @@ body {
 
 /* --- 登入彈窗 --- */
 .auth-box { width: 100%; max-width: 440px; padding: 70px; background: var(--sea-depth); border: 1px solid var(--glass-border); border-radius: 8px; }
-.input-altar { width: 100%; background: transparent; border-bottom: 1px solid var(--glass-border); padding: 18px 0; color: #fff; margin-bottom: 30px; font-family: inherit; font-size: 1.1rem; font-weight: 200; }
+.input-altar { 
+  width: 100%; background: transparent; border-bottom: 1px solid var(--glass-border); 
+  padding: 18px 0; color: var(--sea-sand); margin-bottom: 30px; 
+  font-family: inherit; font-size: 1.1rem; font-weight: 200; 
+}
+.input-altar::placeholder { color: var(--sea-slate); opacity: 0.5; }
+.input-altar:focus { border-bottom-color: var(--sea-teal); }
+
+/* 修正某些瀏覽器自動填充的底色問題 */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--sea-sand);
+  -webkit-box-shadow: 0 0 0px 1000px var(--sea-depth) inset;
+  transition: background-color 5000s ease-in-out 0s;
+}
 
 /* --- 待機畫面 --- */
 #idle-screen { position: fixed; inset: 0; z-index: 30000; background: var(--sea-midnight); display: none; align-items: center; justify-content: center; text-align: center; padding: 60px; cursor: pointer; }
