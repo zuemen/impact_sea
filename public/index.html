@@ -89,6 +89,11 @@
   <!-- 6. 主祭壇介面 -->
   <div id="app-shell">
     <header class="header">
+      <div id="user-info" style="display: none; margin-bottom: 20px;">
+        <span style="font-size: 0.7rem; color: var(--sea-teal); letter-spacing: 2px; text-transform: uppercase;">Guardian: </span>
+        <span id="display-name" style="font-size: 0.7rem; color: var(--sea-sand); letter-spacing: 1px;"></span>
+        <button onclick="window.logout()" style="background: none; border: 1px solid var(--glass-border); color: var(--sea-slate); font-size: 0.5rem; padding: 2px 8px; margin-left: 10px; cursor: pointer; border-radius: 20px; text-transform: uppercase;">Logout</button>
+      </div>
       <p>海洋，從你的選擇開始</p>
       <h1>這片海，<br>離我多遠？</h1>
       <p style="color: var(--sea-slate); text-transform: none; font-weight: 300; font-size: 1.1rem; margin-top: 30px; letter-spacing: 0; line-height: 1.8;">

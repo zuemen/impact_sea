@@ -94,7 +94,7 @@ function stopFactCycle() {
 }
 
 // 監聽各種互動事件
-['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'].forEach(name => {
+['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'input', 'focus'].forEach(name => {
   document.addEventListener(name, resetIdleTimer, true);
 });
 

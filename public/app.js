@@ -292,8 +292,3 @@ async function loadMetrics() {
     `;
   }).join('');
 }
-
-el.coastSelect.addEventListener("change", () => {
-  state.currentCoastId = el.coastSelect.value;
-  updateContext();
-});
