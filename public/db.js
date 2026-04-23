@@ -8,7 +8,12 @@ const DB = {
     const res = await fetch('/api/actions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, deviceId: userId, ...data })
+      body: JSON.stringify({ 
+        deviceId: userId, 
+        coastId: data.coastId, 
+        verifiedItems: data.verifiedItems || [],
+        locationPoint: data.locationPoint || "unknown"
+      })
     });
     if (!res.ok) {
       const err = await res.json();

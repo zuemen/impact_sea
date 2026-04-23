@@ -110,7 +110,7 @@ async function startRitual() {
 
   try {
     // 1. 先儲存行動
-    await DB.saveAction(userId, { coastId: state.currentCoastId, items: checked });
+    await DB.saveAction(userId, { coastId: state.currentCoastId, verifiedItems: checked });
     
     // 2. 獲取獎勵與背景
     state.reward = await DB.getRandomReward(state.currentCoastId);
