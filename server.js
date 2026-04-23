@@ -6,7 +6,25 @@ const { URL } = require("url");
 const PORT = process.env.PORT || 8080;
 const ROOT = __dirname;
 const PUBLIC_DIR = path.join(ROOT, "public");
-const DATA_DIR = path.join(ROOT, "data");
+
+// Vercel Serverless Function 環境下，只有 /tmp 是可寫入的
+// 但注意：這裡的寫入是暫時的，重啟後會消失。
+const IS_VERCEL = process.env.VERCEL === "1";
+const DATA_DIR = IS_VERCEL ? path.join("/tmp", "data") : path.join(ROOT, "data");
+
+// 在 Vercel 環境中，初始化時將預設資料從 ROOT/data 複製到 /tmp/data
+if (IS_VERCEL) {
+  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+  const sourceDataDir = path.join(ROOT, "data");
+  if (fs.existsSync(sourceDataDir)) {
+    fs.readdirSync(sourceDataDir).forEach(file => {
+      const destFile = path.join(DATA_DIR, file);
+      if (!fs.existsSync(destFile)) {
+        fs.copyFileSync(path.join(sourceDataDir, file), destFile);
+      }
+    });
+  }
+}
 
 const MIME_TYPES = {
   ".html": "text/html; charset=utf-8",
@@ -28,7 +46,11 @@ function ensureDataFile(name, fallback) {
 
 function readJson(name) {
   const file = path.join(DATA_DIR, name);
-  return JSON.parse(fs.readFileSync(file, "utf8"));
+  try {
+    return JSON.parse(fs.readFileSync(file, "utf8"));
+  } catch (e) {
+    return [];
+  }
 }
 
 function writeJson(name, value) {
