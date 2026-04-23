@@ -179,10 +179,11 @@ body {
 /* --- 3D 卡片 --- */
 .stage-overlay {
   position: fixed; inset: 0; z-index: 11000;
-  background: rgba(5, 18, 33, 0.98); backdrop-filter: blur(30px);
+  background: rgba(5, 18, 33, 0.98);
   display: none; align-items: center; justify-content: center; perspective: 2000px;
 }
 #card-3d { width: 360px; height: 560px; transform-style: preserve-3d; }
+.card-inner { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; cursor: pointer; }
 .card-face {
   position: absolute; inset: 0; backface-visibility: hidden;
   background: var(--sea-depth); color: var(--sea-sand); border-radius: 8px; overflow: hidden;
