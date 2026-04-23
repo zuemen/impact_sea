@@ -218,6 +218,8 @@ textarea:-webkit-autofill:focus {
 }
 
 /* --- 待機畫面 --- */
+#auth-overlay { position: fixed; inset: 0; z-index: 9999; background: rgba(5, 18, 33, 0.98); display: none; align-items: center; justify-content: center; }
+
 #idle-screen { position: fixed; inset: 0; z-index: 30000; background: var(--sea-midnight); display: none; align-items: center; justify-content: center; text-align: center; padding: 60px; cursor: pointer; }
 .idle-text { font-size: 2.2rem; color: var(--sea-teal); line-height: 1.8; font-weight: 200; max-width: 900px; }
 

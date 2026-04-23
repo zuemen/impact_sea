@@ -48,5 +48,25 @@
     "discount": true,
     "noSingleUse": true,
     "note": "自備容器加贈飲品"
+  },
+  {
+    "id": "s6",
+    "coastId": "hl1",
+    "name": "七星海邊工作室",
+    "type": "在地手作",
+    "region": "east",
+    "discount": true,
+    "noSingleUse": true,
+    "note": "無塑包裝產品 9 折"
+  },
+  {
+    "id": "s7",
+    "coastId": "kt1",
+    "name": "後壁湖珊瑚café",
+    "type": "友善咖啡店",
+    "region": "south",
+    "discount": true,
+    "noSingleUse": true,
+    "note": "自備杯折 15 元"
   }
 ]

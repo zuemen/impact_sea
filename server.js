@@ -212,6 +212,12 @@ function handleApi(req, res, urlObj) {
     return sendJson(res, 200, { item: randomItem(pool.length ? pool : combinedPool) });
   }
 
+  if (pathname === "/api/progress" && method === "GET") {
+    const deviceId = urlObj.searchParams.get("deviceId");
+    if (!deviceId) return sendJson(res, 400, { error: "deviceId required" });
+    return sendJson(res, 200, buildProgress(deviceId, actions));
+  }
+
   if (pathname === "/api/metrics" && method === "GET") {
     const month = urlObj.searchParams.get("month") || monthKey();
     return sendJson(res, 200, computeMetrics(actions, submissions, month));

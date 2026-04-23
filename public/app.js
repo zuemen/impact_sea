@@ -14,7 +14,8 @@ const state = {
     { id:'s1', coastId:'kl1', name:'小島咖啡', type:'友善咖啡店', note:'自備杯折 10 元' },
     { id:'s2', coastId:'td1', name:'成功民宿', type:'綠色旅宿', note:'續住不更換備品折扣' },
     { id:'s3', coastId:'ph1', name:'七美舍', type:'地方創生空間', note:'自備容器加贈飲品' },
-    { id:'s4', coastId:'hl1', name:'七星海邊工作室', type:'在地手作', note:'無塑包裝產品 9 折' }
+    { id:'s4', coastId:'hl1', name:'七星海邊工作室', type:'在地手作', note:'無塑包裝產品 9 折' },
+    { id:'s5', coastId:'kt1', name:'後壁湖珊瑚café', type:'友善咖啡店', note:'自備杯折 15 元' }
   ],
   currentCoastId: 'kl1',
   reward: null,
@@ -292,3 +293,5 @@ async function loadMetrics() {
     `;
   }).join('');
 }
+
+window.startRitual = startRitual;

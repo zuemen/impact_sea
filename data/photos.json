@@ -22,5 +22,21 @@
     "locationName": "澎湖七美",
     "nickname": "Ariel",
     "story": "這裡是我第一次看到海龜的地方，想把它留給下一代。"
+  },
+  {
+    "id": "p4",
+    "coastId": "hl1",
+    "photoUrl": "https://images.unsplash.com/photo-1542152631-507977464098?w=1200",
+    "locationName": "花蓮七星潭",
+    "nickname": "Chen",
+    "story": "清晨的礫石灘上，浪聲代替了鬧鐘，提醒我守護這份寧靜。"
+  },
+  {
+    "id": "p5",
+    "coastId": "kt1",
+    "photoUrl": "https://images.unsplash.com/photo-1559128010-7c1ad6e1b6a5?w=1200",
+    "locationName": "墾丁後壁湖",
+    "nickname": "Lin",
+    "story": "水面下的珊瑚礁是另一個世界，值得我們一起守護。"
   }
 ]

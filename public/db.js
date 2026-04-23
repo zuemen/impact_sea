@@ -22,14 +22,11 @@ const DB = {
     return await res.json();
   },
 
-  // 取得使用者進度
+  // 取得使用者個人進度（印章數、連續天數）
   async getUserProgress(userId) {
-    // 這裡暫時維持從 actions 獲取基本計算
-    const res = await fetch('/api/metrics');
-    const metrics = await res.json();
-    
-    // 為了簡單化，從 metrics 取得全體數據，個別使用者進度在 MVP 中可先模擬或從 API 擴展
-    return { stampCount: Math.min(metrics.actionCount, 5), streakDays: metrics.actionCount > 0 ? 1 : 0 };
+    const res = await fetch(`/api/progress?deviceId=${encodeURIComponent(userId)}`);
+    if (!res.ok) return { stampCount: 0, streakDays: 0, totalActions: 0 };
+    return await res.json();
   },
 
   // 送出投稿
