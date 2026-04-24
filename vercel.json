@@ -18,26 +18,26 @@
       "use": "@vercel/static"
     }
   ],
-  "rewrites": [
+  "routes": [
     {
-      "source": "/api/token",
-      "destination": "/api/token.py"
+      "src": "/api/token",
+      "dest": "/api/token.py"
     },
     {
-      "source": "/api/esg",
-      "destination": "/api/esg.py"
+      "src": "/api/esg",
+      "dest": "/api/esg.py"
     },
     {
-      "source": "/api/(.*)",
-      "destination": "/server.js"
+      "src": "/api/(.*)",
+      "dest": "/server.js"
     },
     {
-      "source": "/",
-      "destination": "/public/index.html"
+      "src": "/",
+      "dest": "/public/index.html"
     },
     {
-      "source": "/(.*)",
-      "destination": "/public/$1"
+      "src": "/(.*)",
+      "dest": "/public/$1"
     }
   ]
 }
