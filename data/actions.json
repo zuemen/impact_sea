@@ -1,1 +1,15 @@
-[]
+[
+  {
+    "id": "act_1777013921199",
+    "createdAt": "2026-04-24T06:58:41.199Z",
+    "dateKey": "2026-04-24",
+    "deviceId": "demo_user",
+    "coastId": "hl1",
+    "locationPoint": "unknown",
+    "verifiedItems": [
+      "cup",
+      "beach-cleanup"
+    ],
+    "reductionGram": 0.42
+  }
+]

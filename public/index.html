@@ -135,6 +135,18 @@
             <input type="checkbox" value="utensil" hidden onchange="this.parentElement.classList.toggle('active')">
             <i class="fa-solid fa-utensils"></i><span>自備餐具</span>
           </label>
+          <label class="icon-option" id="task-straw">
+            <input type="checkbox" value="no-straw" hidden onchange="this.parentElement.classList.toggle('active')">
+            <i class="fa-solid fa-ban"></i><span>拒絕吸管</span>
+          </label>
+          <label class="icon-option" id="task-cleanup">
+            <input type="checkbox" value="beach-cleanup" hidden onchange="this.parentElement.classList.toggle('active')">
+            <i class="fa-solid fa-hand-sparkles"></i><span>淨灘撿塑</span>
+          </label>
+          <label class="icon-option" id="task-container">
+            <input type="checkbox" value="reusable-container" hidden onchange="this.parentElement.classList.toggle('active')">
+            <i class="fa-solid fa-box-open"></i><span>自備容器</span>
+          </label>
         </div>
 
         <div id="random-coast-indicator" style="margin-bottom: 40px; padding: 20px; border: 1px dashed var(--sea-teal); border-radius: 8px; text-align: center;">
@@ -284,6 +296,48 @@
       <h2 style="font-weight:200; margin-bottom:16px;">已召喚的守護靈</h2>
       <div id="collection-stats" style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:30px;"></div>
       <div id="card-collection" class="collection-grid"></div>
+    </section>
+
+    <!-- ══ 11. 區塊鏈代幣兌換商城 ══ -->
+    <section id="reward-shop-section" class="altar-panel" style="display:none; margin-top:60px; max-width:960px; margin-left:auto; margin-right:auto;">
+      <span class="ritual-title">Token Exchange / 代幣兌換</span>
+      <h2 style="font-weight:200; margin-bottom:8px;">守護代幣商城</h2>
+      <p style="color:var(--sea-slate); font-size:0.85rem; font-weight:300; margin-bottom:16px;">
+        你的每一次守護行動都會獲得 <b style="color:var(--sea-teal);">OceanToken (OCT)</b>，這些代幣以區塊鏈記錄，可兌換永續商品。
+      </p>
+      <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:40px; padding:20px; border:1px solid rgba(43,103,106,0.3); border-radius:12px; background:rgba(43,103,106,0.08);">
+        <span style="font-size:0.65rem; letter-spacing:3px; color:var(--sea-teal); text-transform:uppercase;">Your Tokens</span>
+        <span id="token-balance" style="font-size:2.5rem; font-weight:200; color:var(--sea-sand); margin-left:auto;">0</span>
+        <span style="font-size:0.9rem; color:var(--sea-slate);">OCT</span>
+      </div>
+      <div id="reward-shop-grid" class="collection-grid" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px;"></div>
+    </section>
+
+    <!-- ══ 12. Social Plastic® ESG 儀表板 ══ -->
+    <section id="esg-section" class="altar-panel" style="display:none; margin-top:60px; max-width:800px; margin-left:auto; margin-right:auto;">
+      <span class="ritual-title">Social Plastic® / ESG 認證</span>
+      <h2 style="font-weight:200; margin-bottom:8px;">社會塑料透明帳本</h2>
+      <p style="color:var(--sea-slate); font-size:0.85rem; font-weight:300; margin-bottom:40px;">
+        每次守護行動所減少的塑膠，都被標記為 Social Plastic®，並透過區塊鏈認證，讓品牌（如 Henkel）可以收購這些經過驗證的環保貢獻。
+      </p>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:40px;">
+        <div style="padding:24px; border:1px solid rgba(43,103,106,0.3); border-radius:12px; background:rgba(43,103,106,0.08); text-align:center;">
+          <span style="font-size:0.6rem; letter-spacing:3px; color:var(--sea-teal); text-transform:uppercase;">Total Collected</span>
+          <div id="sp-total-collected" style="font-size:2.5rem; font-weight:200; color:var(--sea-sand); margin-top:8px;">0 <small style="font-size:0.9rem; opacity:0.5;">g</small></div>
+        </div>
+        <div style="padding:24px; border:1px solid rgba(212,175,55,0.3); border-radius:12px; background:rgba(212,175,55,0.06); text-align:center;">
+          <span style="font-size:0.6rem; letter-spacing:3px; color:var(--gold); text-transform:uppercase;">Brand Sponsored</span>
+          <div id="sp-total-sponsored" style="font-size:2.5rem; font-weight:200; color:var(--gold); margin-top:8px;">0 <small style="font-size:0.9rem; opacity:0.5;">g</small></div>
+        </div>
+      </div>
+
+      <div style="text-align:center; margin-bottom:40px;">
+        <button onclick="window.simulateSponsor()" class="btn-ignite" style="border-color:var(--gold); color:var(--gold);">模擬 Henkel 認購 10g Social Plastic®</button>
+      </div>
+
+      <span class="data-label" style="margin-bottom:20px;">Blockchain Ledger / 區塊鏈紀錄</span>
+      <div id="sp-tx-list" style="display:flex; flex-direction:column; gap:8px; max-height:400px; overflow-y:auto;"></div>
     </section>
 
     <footer style="margin-top:150px; padding-bottom:80px; text-align:center; opacity:0.3;">

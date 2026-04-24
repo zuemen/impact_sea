@@ -4,18 +4,24 @@ gsap.registerPlugin(MotionPathPlugin);
 
 const state = {
   coasts: [
-    { id:'kl1', name:'基隆嶼海域', tag:'北部海域', cityRoute:'城市排水孔 → 基隆河 → 淡水河口 → 基隆嶼', trivia:'龍蝦與黑鳶的家，也是台北人的後花園。', img:'https://images.unsplash.com/photo-1542332213-9b5a5a3fad35?auto=format&fit=crop&q=80&w=1200' },
-    { id:'td1', name:'台東三仙台', tag:'東部海域', cityRoute:'部落排水口 → 卑南溪 → 太平洋 → 三仙台', trivia:'擁有台灣最美的八拱橋，是第一道曙光照耀之地。', img:'https://images.unsplash.com/photo-1506466010722-395aa2bef877?auto=format&fit=crop&q=80&w=1200' },
-    { id:'ph1', name:'澎湖七美', tag:'離島海域', cityRoute:'城市水溝 → 台灣海峽 → 澎湖群島 → 七美', trivia:'雙心石滬的古老智慧，需要我們這一代繼續傳承。', img:'https://images.unsplash.com/photo-1505228395891-9a51e7e86bf6?auto=format&fit=crop&q=80&w=1200' },
-    { id:'hl1', name:'花蓮七星潭', tag:'東部海域', cityRoute:'美崙溪 → 太平洋 → 七星潭月牙灣', trivia:'湛藍的礫石海灘，是東台灣最純淨的呼吸。', img:'https://images.unsplash.com/photo-1542152631-507977464098?auto=format&fit=crop&q=80&w=1200' },
-    { id:'kt1', name:'墾丁後壁湖', tag:'南部海域', cityRoute:'恆春水溝 → 巴士海峽 → 後壁湖珊瑚礁', trivia:'台灣最具代表性的珊瑚礁棲息地，潛水者的天堂。', img:'https://images.unsplash.com/photo-1559128010-7c1ad6e1b6a5?auto=format&fit=crop&q=80&w=1200' }
+    { id:'kl1', name:'基隆嶼海域', tag:'北部海域', cityRoute:'城市排水孔 → 基隆河 → 淡水河口 → 基隆嶼', trivia:'龍蝦與黑鳶的家，也是台北人的後花園。', img:'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&q=80&w=1200' },
+    { id:'td1', name:'台東三仙台', tag:'東部海域', cityRoute:'部落排水口 → 卑南溪 → 太平洋 → 三仙台', trivia:'擁有台灣最美的八拱橋，是第一道曙光照耀之地。', img:'https://images.unsplash.com/photo-1505118380757-91f5f45d8de4?auto=format&fit=crop&q=80&w=1200' },
+    { id:'ph1', name:'澎湖七美', tag:'離島海域', cityRoute:'城市水溝 → 台灣海峽 → 澎湖群島 → 七美', trivia:'雙心石滬的古老智慧，需要我們這一代繼續傳承。', img:'https://images.unsplash.com/photo-1468413253725-0d5181091126?auto=format&fit=crop&q=80&w=1200' },
+    { id:'hl1', name:'花蓮七星潭', tag:'東部海域', cityRoute:'美崙溪 → 太平洋 → 七星潭月牙灣', trivia:'湛藍的礫石海灘，是東台灣最純淨的呼吸。', img:'https://images.unsplash.com/photo-1519451241324-20b4ea2c4220?auto=format&fit=crop&q=80&w=1200' },
+    { id:'kt1', name:'墾丁後壁湖', tag:'南部海域', cityRoute:'恆春水溝 → 巴士海峽 → 後壁湖珊瑚礁', trivia:'台灣最具代表性的珊瑚礁棲息地，潛水者的天堂。', img:'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&q=80&w=1200' },
+    { id:'yl1', name:'宜蘭龜山島', tag:'東北部海域', cityRoute:'蘭陽溪 → 宜蘭外海 → 龜山島海域', trivia:'台灣最活躍的海底溫泉，牛奶海的秘境所在。', img:'https://images.unsplash.com/photo-1518837695005-2083093ee35b?auto=format&fit=crop&q=80&w=1200' },
+    { id:'tp1', name:'新北野柳', tag:'北部海域', cityRoute:'北海岸排水 → 金山外海 → 野柳地質公園', trivia:'女王頭的故鄉，千萬年地質奇觀的見證。', img:'https://images.unsplash.com/photo-1559827260-dc66d52bef19?auto=format&fit=crop&q=80&w=1200' },
+    { id:'km1', name:'金門海域', tag:'離島海域', cityRoute:'城市水道 → 廈門灣 → 金門南海岸', trivia:'鱟的故鄉，活化石與戰地遺跡共存的獨特海岸。', img:'https://images.unsplash.com/photo-1476673160081-cf065607f449?auto=format&fit=crop&q=80&w=1200' }
   ],
   shops: [
     { id:'s1', coastId:'kl1', name:'小島咖啡', type:'友善咖啡店', note:'自備杯折 10 元' },
     { id:'s2', coastId:'td1', name:'成功民宿', type:'綠色旅宿', note:'續住不更換備品折扣' },
     { id:'s3', coastId:'ph1', name:'七美舍', type:'地方創生空間', note:'自備容器加贈飲品' },
     { id:'s4', coastId:'hl1', name:'七星海邊工作室', type:'在地手作', note:'無塑包裝產品 9 折' },
-    { id:'s5', coastId:'kt1', name:'後壁湖珊瑚café', type:'友善咖啡店', note:'自備杯折 15 元' }
+    { id:'s5', coastId:'kt1', name:'後壁湖珊瑚café', type:'友善咖啡店', note:'自備杯折 15 元' },
+    { id:'s6', coastId:'yl1', name:'頭城海洋書房', type:'獨立書店', note:'自備袋享閱讀折扣' },
+    { id:'s7', coastId:'tp1', name:'野柳地質咖啡', type:'景觀咖啡', note:'自備杯免費升級' },
+    { id:'s8', coastId:'km1', name:'金門浯島食堂', type:'在地料理', note:'自備餐具送小菜' }
   ],
   currentCoastId: 'kl1',
   reward: null,
