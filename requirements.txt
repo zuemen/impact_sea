@@ -1,1 +1,2 @@
-# No external dependencies needed - using Python stdlib only
+Flask==3.0.3
+Werkzeug==3.0.1
