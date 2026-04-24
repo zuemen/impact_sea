@@ -275,6 +275,13 @@ function handleApi(req, res, urlObj) {
     return sendJson(res, 200, { ok: true, now: new Date().toISOString() });
   }
 
+  // 個人進度（印章、連續天數）
+  if (pathname === "/api/progress" && method === "GET") {
+    const deviceId = urlObj.searchParams.get("deviceId");
+    if (!deviceId) return sendJson(res, 400, { error: "deviceId required" });
+    return sendJson(res, 200, buildProgress(deviceId, readJson("actions.json")));
+  }
+
   if (pathname === "/api/coasts" && method === "GET") {
     return sendJson(res, 200, { items: readJson("coasts.json") });
   }

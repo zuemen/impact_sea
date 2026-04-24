@@ -23,35 +23,38 @@ const state = {
 };
 
 const el = {
-  appShell: document.getElementById("app-shell"),
-  routeText: document.getElementById("routeText"),
-  pathFill: document.getElementById("path-fill"),
-  stampRow: document.getElementById("stampRow"),
-  streakText: document.getElementById("streakText"),
-  coastSelect: document.getElementById("coastSelect"),
-  actBtn: document.getElementById("actBtn"),
+  appShell:     document.getElementById("app-shell"),
+  stampRow:     document.getElementById("stampRow"),
+  streakText:   document.getElementById("streakText"),
+  actBtn:       document.getElementById("actBtn"),
   actionStatus: document.getElementById("actionStatus"),
-  shopList: document.getElementById("shopList"),
-  kpiActions: document.getElementById("kpiActions"),
-  kpiGram: document.getElementById("kpiGram"),
-  coastBar: document.getElementById("coastBar")
+  shopList:     document.getElementById("shopList"),
+  kpiActions:   document.getElementById("kpiActions"),
+  kpiGram:      document.getElementById("kpiGram"),
+  coastBar:     document.getElementById("coastBar")
 };
 
-// --- 初始化 ---
+// ── 取得當前使用者 ID（統一用 auth.js 匯出的函數） ───────────
+function getUid() {
+  if (window.getCurrentUserId) return window.getCurrentUserId();
+  if (typeof auth !== 'undefined' && auth.currentUser) return auth.currentUser.uid;
+  return null;
+}
 
+// ── 初始化：登入後呼叫 ───────────────────────────────────────
 window.initApp = async () => {
-  const user = auth.currentUser;
-  const IS_DEMO = firebaseConfig.apiKey === "YOUR_API_KEY";
-  
-  if (!user && !IS_DEMO) return;
-
   gsap.to(el.appShell, { opacity: 1, duration: 1.5, ease: "power2.out" });
-  
-  refreshUI();
+  const uid = getUid();
+  refreshUI(uid);
+  // 啟動錢包與抽卡模組
+  if (uid) {
+    if (window.initWallet) window.initWallet(uid);
+    if (window.initGacha) window.initGacha(uid);
+  }
 };
 
-async function refreshUI() {
-  const userId = auth.currentUser ? auth.currentUser.uid : 'demo_user';
+async function refreshUI(uid) {
+  const userId = uid || getUid() || 'demo_user';
   updateUserProgress(userId);
   renderShops();
   loadMetrics();
@@ -71,13 +74,15 @@ async function updateUserProgress(userId) {
   } catch (err) { console.error(err); }
 }
 
-// --- 守護儀式 Core ---
-
+// ── 入口儀式：點擊鏡像門 ─────────────────────────────────────
 window.enterApp = () => {
-  const IS_DEMO = firebaseConfig.apiKey === "YOUR_API_KEY";
   gsap.to("#mirror-gate", { opacity: 0, scale: 1.2, duration: 1.5, onComplete: () => {
     document.getElementById('mirror-gate').style.display = 'none';
-    if (!auth.currentUser && !IS_DEMO) {
+
+    // 無論 Firebase 模式或 demo 模式，都需要確認已登入
+    const uid = getUid();
+    if (!uid) {
+      // 未登入 → 顯示登入/註冊 overlay
       document.getElementById('auth-overlay').style.display = 'flex';
     } else {
       window.initApp();
@@ -85,11 +90,11 @@ window.enterApp = () => {
   }});
 };
 
-async function startRitual() {
+// ── 守護行動儀式 ─────────────────────────────────────────────
+window.startRitual = async function() {
   if (state.isDoingRitual) return;
-  
-  const IS_DEMO = firebaseConfig.apiKey === "YOUR_API_KEY";
-  const userId = auth.currentUser ? auth.currentUser.uid : (IS_DEMO ? 'demo_user' : null);
+
+  const userId = getUid();
   if (!userId) {
     document.getElementById('auth-overlay').style.display = 'flex';
     return;
@@ -101,7 +106,6 @@ async function startRitual() {
     return;
   }
 
-  // 隨機選取一片海域
   const randomCoast = state.coasts[Math.floor(Math.random() * state.coasts.length)];
   state.currentCoastId = randomCoast.id;
 
@@ -110,50 +114,50 @@ async function startRitual() {
   el.actionStatus.innerText = "正在感應海洋連結...";
 
   try {
-    // 1. 先儲存行動（server 同時記錄積點）
+    // 1. 儲存行動（server 同步記錄積點）
     const actionResult = await DB.saveAction(userId, { coastId: state.currentCoastId, verifiedItems: checked });
 
-    // 行動完成積點提示
+    // 行動完成後顯示積點 toast（等動畫結束後）
     if (actionResult && actionResult.pointsEarned) {
       setTimeout(() => {
-        window.showBonusToast && window.showBonusToast(
-          actionResult.pointsEarned,
-          `守護行動完成！鏈上雜湊：${(actionResult.txHash || '').slice(0, 8)}…`
-        );
-      }, 6000); // 等動畫後顯示
+        if (window.showBonusToast) {
+          window.showBonusToast(
+            actionResult.pointsEarned,
+            `守護行動完成！鏈上雜湊：${(actionResult.txHash || '').slice(0, 8)}…`
+          );
+        }
+      }, 6200);
     }
 
-    // 2. 獲取獎勵與背景
+    // 2. 取隨機獎勵照片
     state.reward = await DB.getRandomReward(state.currentCoastId);
     const coast = randomCoast;
 
-    // 更新路徑顯示文字
+    // 更新路徑顯示
     const routeContainer = document.getElementById('route-container');
-    const routeText = document.getElementById('routeText');
-    const pathFill = document.getElementById('path-fill');
-    routeText.textContent = coast.cityRoute;
-    pathFill.style.width = '0%';
+    document.getElementById('routeText').textContent = coast.cityRoute;
+    document.getElementById('path-fill').style.width = '0%';
     routeContainer.style.display = 'block';
 
-    // 3. 啟動動畫
+    // 3. 啟動 GSAP 動畫
     const ov = document.getElementById('anim-overlay');
     ov.style.display = 'flex';
     ov.style.opacity = 1;
 
     const photon = document.getElementById('light-essence');
     gsap.set(photon, { top: "100%", left: "50%", scale: 1, opacity: 1 });
-    
+
     const tl = gsap.timeline();
     gsap.to("#line-1", { opacity: 1, y: -20, duration: 1.5 });
-    
-    tl.to(photon, { 
+
+    tl.to(photon, {
       motionPath: { path: "#river-path", align: "#river-path", alignOrigin: [0.5, 0.5] },
-      duration: 5, ease: "power2.inOut" 
+      duration: 5, ease: "power2.inOut"
     })
     .add(() => {
       gsap.to("#line-1", { opacity: 0, duration: 1 });
       gsap.to("#line-2", { opacity: 1, y: -20, delay: 0.8, duration: 1.5 });
-      gsap.to(pathFill, { width: (Math.random() * 50 + 40) + '%', duration: 4, ease: "power1.inOut" });
+      gsap.to(document.getElementById('path-fill'), { width: (Math.random() * 50 + 40) + '%', duration: 4, ease: "power1.inOut" });
     })
     .to(photon, { scale: 150, opacity: 0, duration: 2 })
     .add(() => {
@@ -164,7 +168,7 @@ async function startRitual() {
       document.getElementById('btn-reveal-final').style.display = 'block';
     });
 
-    refreshUI();
+    refreshUI(userId);
 
   } catch (err) {
     el.actionStatus.innerText = err.message || "儀式啟動失敗，請稍後再試。";
@@ -172,7 +176,7 @@ async function startRitual() {
     el.actBtn.disabled = false;
     document.getElementById('anim-overlay').style.display = 'none';
   }
-}
+};
 
 window.revealReward = () => {
   const ov = document.getElementById('anim-overlay');
@@ -185,21 +189,20 @@ window.revealReward = () => {
 function showCard() {
   const stage = document.getElementById('reward-stage');
   stage.style.display = 'flex';
-  
-  const r = state.reward || {}; // 防錯：如果 r 是 null 也能運行
+
+  const r = state.reward || {};
   const coast = state.coasts.find(c => c.id === state.currentCoastId) || state.coasts[0];
 
   const img = document.getElementById('c-img');
-  // 優先順序：投稿照片 -> 內建照片 -> 海域預設風景
   img.src = r.photoUrl || r.img || coast.img;
   img.onerror = () => { img.src = coast.img; };
 
   document.getElementById('c-loc').innerText = r.locationName || r.name || coast.name;
   document.getElementById('c-loc-tag').innerText = coast.tag || "台灣海域";
   document.getElementById('c-story').innerText = r.story || "感謝這份守護海洋的心意。這片海域因為你的選擇而更清澈了一點。";
-  document.getElementById('c-impact-num').innerText = (0.3 + Math.random()*0.3).toFixed(2);
+  document.getElementById('c-impact-num').innerText = (0.3 + Math.random() * 0.3).toFixed(2);
   document.getElementById('c-impact-text').innerText = coast.trivia;
-  
+
   const shop = state.shops.find(s => s.coastId === state.currentCoastId) || state.shops[0];
   document.getElementById('c-s-name').innerText = shop.name;
   document.getElementById('c-s-type').innerText = (shop.type || "友善店家") + " ｜ " + (shop.note || "自備折扣");
@@ -218,42 +221,43 @@ window.closeReward = (e) => {
   const stage = document.getElementById('reward-stage');
   gsap.to(stage, { opacity: 0, scale: 0.8, duration: 0.4, onComplete: () => {
     stage.style.display = 'none';
+    stage.style.opacity = 1;
     state.isDoingRitual = false;
     el.actBtn.disabled = false;
-    document.querySelectorAll(".task-icons input").forEach(i => { i.checked = false; i.parentElement.classList.remove('active'); });
+    document.querySelectorAll(".task-icons input").forEach(i => {
+      i.checked = false;
+      i.parentElement.classList.remove('active');
+    });
   }});
 };
 
+// ── 照片上傳 ─────────────────────────────────────────────────
 window.handleFileSelect = (e) => {
   const file = e.target.files[0];
   if (!file) return;
-
   if (file.size > 2 * 1024 * 1024) {
     alert("照片檔案過大，請選擇 2MB 以下的圖片。");
     return;
   }
-
   const reader = new FileReader();
   reader.onload = (event) => {
     state.pendingImageData = event.target.result;
     document.getElementById('upload-placeholder').style.display = 'none';
-    const preview = document.getElementById('upload-preview');
-    const img = document.getElementById('preview-img');
-    img.src = state.pendingImageData;
-    preview.style.display = 'block';
+    document.getElementById('preview-img').src = state.pendingImageData;
+    document.getElementById('upload-preview').style.display = 'block';
   };
   reader.readAsDataURL(file);
 };
 
 window.submitObservation = async () => {
-  const userId = auth.currentUser ? auth.currentUser.uid : 'demo_user';
+  const userId = getUid() || 'demo_user';
   const data = {
-    photoUrl: state.pendingImageData, // 使用 Base64 資料
-    nickname: document.getElementById('sub-nickname').value,
+    photoUrl:     state.pendingImageData,
+    nickname:     document.getElementById('sub-nickname').value,
     locationName: document.getElementById('sub-location').value,
-    story: document.getElementById('sub-story').value,
-    consent: document.getElementById('sub-consent').checked,
-    coastId: state.currentCoastId
+    story:        document.getElementById('sub-story').value,
+    consent:      document.getElementById('sub-consent').checked,
+    coastId:      state.currentCoastId
   };
 
   const status = document.getElementById('sub-status');
@@ -265,17 +269,19 @@ window.submitObservation = async () => {
   status.innerText = "正在傳送海洋記憶...";
   try {
     await DB.submitPhoto(userId, data);
-    status.innerText = "投稿成功！感謝你的觀察。";
+    status.innerText = "投稿成功！+15 積點已入帳。感謝你的觀察。";
     document.getElementById('submission-form').reset();
     document.getElementById('upload-placeholder').style.display = 'block';
     document.getElementById('upload-preview').style.display = 'none';
     state.pendingImageData = null;
+    if (window.refreshWallet) setTimeout(window.refreshWallet, 500);
   } catch (err) {
     status.innerText = "傳送失敗，請稍後再試。";
     console.error(err);
   }
 };
 
+// ── 店家清單 ─────────────────────────────────────────────────
 function renderShops() {
   el.shopList.innerHTML = state.shops.map(s => `
     <div class="shop-item">
@@ -285,23 +291,24 @@ function renderShops() {
   `).join('');
 }
 
+// ── 全體 KPI 數據 ─────────────────────────────────────────────
 async function loadMetrics() {
-  const m = await DB.getMonthlyMetrics();
-  el.kpiActions.innerText = m.actionCount;
-  el.kpiGram.innerText = m.reductionGram;
+  try {
+    const m = await DB.getMonthlyMetrics();
+    el.kpiActions.innerText = m.actionCount;
+    el.kpiGram.innerText = m.reductionGram;
 
-  const max = Math.max(1, ...Object.values(m.byCoast));
-  el.coastBar.innerHTML = state.coasts.slice(0, 3).map(c => {
-    const val = m.byCoast[c.id] || 0;
-    const width = (val / max) * 100;
-    return `
-      <div class="coast-row">
-        <span style="width:70px; opacity:0.6;">${c.name}</span>
-        <div class="bar-bg"><div class="bar-fill" style="width:${width}%"></div></div>
-        <span style="width:20px; text-align:right;">${val}</span>
-      </div>
-    `;
-  }).join('');
+    const max = Math.max(1, ...Object.values(m.byCoast || {}));
+    el.coastBar.innerHTML = state.coasts.slice(0, 3).map(c => {
+      const val = m.byCoast?.[c.id] || 0;
+      const width = (val / max) * 100;
+      return `
+        <div class="coast-row">
+          <span style="width:70px; opacity:0.6; font-size:0.7rem;">${c.name.slice(0,4)}</span>
+          <div class="bar-bg"><div class="bar-fill" style="width:${width}%"></div></div>
+          <span style="width:20px; text-align:right; font-size:0.8rem;">${val}</span>
+        </div>
+      `;
+    }).join('');
+  } catch (err) { console.error('metrics error:', err); }
 }
-
-window.startRitual = startRitual;

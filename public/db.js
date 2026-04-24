@@ -1,9 +1,9 @@
-// --- Firestore Database Wrapper + Demo Mode Support ---
-
-const IS_DEMO = firebaseConfig.apiKey === "YOUR_API_KEY";
+// --- Database / API Wrapper ---
+// IS_DEMO 已在 auth.js 定義為全域變數，此處不重複宣告
 
 const DB = {
-  // 儲存一次守護行動，server 會同步發放積點並回傳 pointsEarned / txHash
+
+  // 儲存一次守護行動，server 同步發放積點並回傳 pointsEarned / txHash
   async saveAction(userId, data) {
     const token = window.getSessionToken ? window.getSessionToken() : null;
     const headers = { 'Content-Type': 'application/json' };
@@ -22,21 +22,28 @@ const DB = {
       const err = await res.json();
       throw new Error(err.error || '儲存失敗');
     }
-    return await res.json(); // 包含 { action, reward, progress, pointsEarned, newBalance, txHash }
+    return await res.json(); // { action, reward, progress, pointsEarned, newBalance, txHash }
   },
 
   // 取得使用者個人進度（印章數、連續天數）
   async getUserProgress(userId) {
-    const res = await fetch(`/api/progress?deviceId=${encodeURIComponent(userId)}`);
-    if (!res.ok) return { stampCount: 0, streakDays: 0, totalActions: 0 };
-    return await res.json();
+    try {
+      const res = await fetch(`/api/progress?deviceId=${encodeURIComponent(userId)}`);
+      if (!res.ok) return { stampCount: 0, streakDays: 0, totalActions: 0 };
+      return await res.json();
+    } catch {
+      return { stampCount: 0, streakDays: 0, totalActions: 0 };
+    }
   },
 
   // 送出投稿
   async submitPhoto(userId, data) {
+    const token = window.getSessionToken ? window.getSessionToken() : null;
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['x-session-token'] = token;
     const res = await fetch('/api/submissions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({ userId, ...data })
     });
     if (!res.ok) {

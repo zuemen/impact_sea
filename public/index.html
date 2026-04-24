@@ -293,7 +293,7 @@
   </div>
 
   <!-- 抽卡結果 Modal -->
-  <div id="gacha-result-modal" style="display:none; position:fixed; inset:0; z-index:5000; background:rgba(5,18,33,0.92); display:none; align-items:center; justify-content:center; flex-direction:column; padding:1rem;">
+  <div id="gacha-result-modal" style="display:none; position:fixed; inset:0; z-index:5000; background:rgba(5,18,33,0.92); align-items:center; justify-content:center; flex-direction:column; padding:1rem;">
     <div id="gacha-result-cards" style="display:flex; flex-wrap:wrap; gap:16px; justify-content:center; max-width:900px; max-height:75vh; overflow-y:auto; padding:1rem;"></div>
     <button onclick="window.closeGachaResult()" class="btn-ignite" style="margin-top:32px; padding:12px 48px; letter-spacing:4px;">收入圖鑑</button>
   </div>
@@ -315,8 +315,8 @@
   <script src="/wallet.js"></script>
   <script src="/gacha.js"></script>
   <script>
-    // auth.js 中 renderAuthForm 需要在 DOM 完成後才能呼叫
-    renderAuthForm && renderAuthForm();
+    // 初始化 auth 表單（切換 tab 顯示）
+    if (typeof renderAuthForm === 'function') renderAuthForm();
   </script>
 </body>
 </html>
