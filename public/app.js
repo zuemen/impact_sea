@@ -61,7 +61,7 @@ window.initApp = async () => {
 
 async function refreshUI(uid) {
   const userId = uid || getUid() || 'demo_user';
-  updateUserProgress(userId);
+  if (getUid()) updateUserProgress(userId);
   renderShops();
   loadMetrics();
 }

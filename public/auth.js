@@ -188,7 +188,7 @@ if (!IS_DEMO) {
 window.getCurrentUserId = () => {
   if (!IS_DEMO && auth.currentUser) return auth.currentUser.uid;
   if (ServerAuth.isLoggedIn()) return ServerAuth.getUserId();
-  return "demo_user";
+  return null; // 未登入時回傳 null，不要給預設值
 };
 
 window.getCurrentUserName = () => {
