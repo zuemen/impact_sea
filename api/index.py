@@ -4,27 +4,16 @@ import json
 import time
 import hashlib
 import uuid
+import random
+from .db import get_db, init_db
 
 app = Flask(__name__)
 
-# --- Vercel Serverless Data Handling ---
-DATA_DIR = "/tmp/data"
-os.makedirs(DATA_DIR, exist_ok=True)
-
-def _read_json(filename, fallback):
-    path = os.path.join(DATA_DIR, filename)
-    if not os.path.exists(path):
-        return fallback
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except Exception:
-        return fallback
-
-def _write_json(filename, data):
-    path = os.path.join(DATA_DIR, filename)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+# Ensure DB schema is initialized on startup
+try:
+    init_db()
+except Exception as e:
+    print("DB Init Error:", e)
 
 def compute_hash(prev_hash, action, value, user_id, timestamp):
     data_str = f"{prev_hash}|{action}|{value}|{user_id}|{timestamp}"
@@ -40,48 +29,41 @@ def register():
     if not email or not password:
         return jsonify({"error": "email 與 password 為必填"}), 400
     
-    users = _read_json("users.json", [])
-    if any(u.get("email") == email for u in users):
+    conn = get_db()
+    c = conn.cursor()
+    
+    c.execute("SELECT id FROM users WHERE email = ?", (email,))
+    if c.fetchone():
         return jsonify({"error": "該信箱已被註冊"}), 400
     
     user_id = "u_" + str(int(time.time()))
-    new_user = {
-        "id": user_id,
-        "email": email,
-        "password": password,  # MVP Demo only, no hash
-        "displayName": display_name or email.split("@")[0],
-        "points": 0,
-        "createdAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-    }
-    users.append(new_user)
-    _write_json("users.json", users)
+    created_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    display_name = display_name or email.split("@")[0]
+    
+    c.execute("INSERT INTO users (id, email, password, display_name, created_at) VALUES (?, ?, ?, ?, ?)",
+              (user_id, email, password, display_name, created_at))
     
     # 註冊送積點
-    ledger = _read_json("points-ledger.json", [])
-    prev_hash = ledger[-1]["hash"] if ledger else "0"*64
+    c.execute("SELECT hash FROM ledger ORDER BY rowid DESC LIMIT 1")
+    row = c.fetchone()
+    prev_hash = row["hash"] if row else "0"*64
     timestamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     tx_hash = compute_hash(prev_hash, "register_bonus", 30, user_id, timestamp)
     
-    tx = {
-        "id": f"tx_{int(time.time())}",
-        "userId": user_id,
-        "actionId": "register_bonus",
-        "points": 30,
-        "prevHash": prev_hash,
-        "hash": tx_hash,
-        "timestamp": timestamp
-    }
-    ledger.append(tx)
-    _write_json("points-ledger.json", ledger)
-    
+    tx_id = f"tx_{int(time.time())}"
+    c.execute("INSERT INTO ledger (id, user_id, action_id, points, hash, prev_hash, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)",
+              (tx_id, user_id, "register_bonus", 30, tx_hash, prev_hash, timestamp))
+              
     token = str(uuid.uuid4())
-    sessions = _read_json("sessions.json", [])
-    sessions.append({"token": token, "userId": user_id})
-    _write_json("sessions.json", sessions)
+    c.execute("INSERT INTO sessions (token, user_id, created_at) VALUES (?, ?, ?)",
+              (token, user_id, created_at))
+    
+    conn.commit()
+    conn.close()
     
     return jsonify({
         "message": "註冊成功",
-        "user": {"id": user_id, "displayName": new_user["displayName"]},
+        "user": {"id": user_id, "displayName": display_name},
         "token": token,
         "bonusPoints": 30
     }), 201
@@ -94,19 +76,25 @@ def login():
     if not email or not password:
         return jsonify({"error": "email 與 password 為必填"}), 400
         
-    users = _read_json("users.json", [])
-    user = next((u for u in users if u.get("email") == email and u.get("password") == password), None)
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("SELECT id, display_name FROM users WHERE email = ? AND password = ?", (email, password))
+    user = c.fetchone()
+    
     if not user:
+        conn.close()
         return jsonify({"error": "帳號或密碼錯誤"}), 401
         
     token = str(uuid.uuid4())
-    sessions = _read_json("sessions.json", [])
-    sessions.append({"token": token, "userId": user["id"]})
-    _write_json("sessions.json", sessions)
+    created_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    c.execute("INSERT INTO sessions (token, user_id, created_at) VALUES (?, ?, ?)",
+              (token, user["id"], created_at))
+    conn.commit()
+    conn.close()
     
     return jsonify({
         "message": "登入成功",
-        "user": {"id": user["id"], "displayName": user.get("displayName")},
+        "user": {"id": user["id"], "displayName": user["display_name"]},
         "token": token
     })
 
@@ -115,18 +103,25 @@ def verify():
     token = request.headers.get("x-session-token")
     if not token:
         return jsonify({"valid": False}), 401
-    sessions = _read_json("sessions.json", [])
-    session = next((s for s in sessions if s.get("token") == token), None)
-    if not session:
+        
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("""
+        SELECT u.id, u.display_name 
+        FROM sessions s 
+        JOIN users u ON s.user_id = u.id 
+        WHERE s.token = ?
+    """, (token,))
+    user = c.fetchone()
+    conn.close()
+    
+    if not user:
         return jsonify({"valid": False}), 401
         
-    user_id = session["userId"]
-    users = _read_json("users.json", [])
-    user = next((u for u in users if u.get("id") == user_id), None)
     return jsonify({
         "valid": True,
-        "userId": user_id,
-        "displayName": user.get("displayName", "守護者") if user else "守護者"
+        "userId": user["id"],
+        "displayName": user["display_name"] or "守護者"
     })
 
 # --- Actions Routes ---
@@ -143,59 +138,67 @@ def save_action():
     action_id = f"act_{int(time.time())}"
     timestamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     
-    # 簡單的減塑計算
     reduction = len(items) * 0.15
     points_earned = len(items) * 10
     
-    actions = _read_json("actions.json", [])
-    new_action = {
-        "id": action_id,
-        "userId": user_id,
-        "coastId": coast_id,
-        "verifiedItems": items,
-        "reductionGram": round(reduction, 2),
-        "timestamp": timestamp
-    }
-    actions.append(new_action)
-    _write_json("actions.json", actions)
+    conn = get_db()
+    c = conn.cursor()
     
-    # 積點發放
-    ledger = _read_json("points-ledger.json", [])
-    prev_hash = ledger[-1]["hash"] if ledger else "0"*64
+    c.execute("INSERT INTO actions (id, user_id, coast_id, verified_items, reduction_gram, timestamp) VALUES (?, ?, ?, ?, ?, ?)",
+              (action_id, user_id, coast_id, json.dumps(items), round(reduction, 2), timestamp))
+              
+    c.execute("SELECT hash FROM ledger ORDER BY rowid DESC LIMIT 1")
+    row = c.fetchone()
+    prev_hash = row["hash"] if row else "0"*64
     tx_hash = compute_hash(prev_hash, action_id, points_earned, user_id, timestamp)
     
-    tx = {
-        "id": f"tx_{int(time.time())}",
-        "userId": user_id,
-        "actionId": action_id,
-        "points": points_earned,
-        "prevHash": prev_hash,
-        "hash": tx_hash,
-        "timestamp": timestamp
-    }
-    ledger.append(tx)
-    _write_json("points-ledger.json", ledger)
+    tx_id = f"tx_{int(time.time())}"
+    c.execute("INSERT INTO ledger (id, user_id, action_id, points, hash, prev_hash, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)",
+              (tx_id, user_id, action_id, points_earned, tx_hash, prev_hash, timestamp))
+              
+    conn.commit()
+    conn.close()
     
     return jsonify({
         "success": True,
         "actionId": action_id,
         "pointsEarned": points_earned,
-        "reductionGram": new_action["reductionGram"],
+        "reductionGram": round(reduction, 2),
         "txHash": tx_hash
     }), 201
 
 # --- Points/Wallet Routes ---
 @app.route("/api/points/<user_id>/ledger", methods=["GET"])
 def get_ledger(user_id):
-    ledger = _read_json("points-ledger.json", [])
-    user_txs = [tx for tx in ledger if tx.get("userId") == user_id]
+    conn = get_db()
+    c = conn.cursor()
     
-    balance = sum(tx.get("points", 0) for tx in user_txs)
+    c.execute("SELECT SUM(points) as balance FROM ledger WHERE user_id = ?", (user_id,))
+    row = c.fetchone()
+    balance = row["balance"] if row and row["balance"] else 0
+    
+    c.execute("SELECT * FROM ledger WHERE user_id = ? ORDER BY rowid DESC LIMIT 20", (user_id,))
+    txs = [dict(row) for row in c.fetchall()]
+    
+    # Format keys to camelCase for frontend
+    formatted_txs = []
+    for tx in txs:
+        formatted_txs.append({
+            "id": tx["id"],
+            "userId": tx["user_id"],
+            "actionId": tx["action_id"],
+            "points": tx["points"],
+            "hash": tx["hash"],
+            "prevHash": tx["prev_hash"],
+            "timestamp": tx["timestamp"]
+        })
+        
+    conn.close()
     
     return jsonify({
         "userId": user_id,
         "balance": balance,
-        "transactions": list(reversed(user_txs))[:20]
+        "transactions": formatted_txs
     })
 
 # --- Draw Gacha Routes ---
@@ -207,7 +210,6 @@ CARD_POOL = [
     { "id":'l01', "name":'藍鯨',     "rarity":'legendary', "emoji":'🌊', "power":99, "desc":'地球上最大的生命，以低鳴振動整片海洋。' }
 ]
 
-import random
 def draw_card():
     r = random.random()
     if r < 0.03: rarity = "legendary"
@@ -224,73 +226,84 @@ def draw_cards():
     body = request.get_json() or {}
     user_id = body.get("userId")
     count = body.get("count", 1)
-    
-    # support redeem token hack
     redeem_item = body.get("redeemItem")
     redeem_cost = body.get("redeemCost", 0)
     
     if not user_id:
         return jsonify({"error": "userId 為必填"}), 400
         
-    ledger = _read_json("points-ledger.json", [])
-    user_txs = [tx for tx in ledger if tx.get("userId") == user_id]
-    balance = sum(tx.get("points", 0) for tx in user_txs)
+    conn = get_db()
+    c = conn.cursor()
+    
+    c.execute("SELECT SUM(points) as balance FROM ledger WHERE user_id = ?", (user_id,))
+    row = c.fetchone()
+    balance = row["balance"] if row and row["balance"] else 0
     
     cost = redeem_cost if redeem_item else count * 10
     if balance < cost:
+        conn.close()
         return jsonify({"error": "積點不足"}), 400
         
     timestamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-    prev_hash = ledger[-1]["hash"] if ledger else "0"*64
+    c.execute("SELECT hash FROM ledger ORDER BY rowid DESC LIMIT 1")
+    row = c.fetchone()
+    prev_hash = row["hash"] if row else "0"*64
     
     action_type = "redeem_item" if redeem_item else f"draw_{count}"
     tx_hash = compute_hash(prev_hash, action_type, -cost, user_id, timestamp)
     
-    tx = {
-        "id": f"tx_{int(time.time())}",
-        "userId": user_id,
-        "actionId": action_type,
-        "points": -cost,
-        "prevHash": prev_hash,
-        "hash": tx_hash,
-        "timestamp": timestamp
+    tx_id = f"tx_{int(time.time())}"
+    c.execute("INSERT INTO ledger (id, user_id, action_id, points, hash, prev_hash, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)",
+              (tx_id, user_id, action_type, -cost, tx_hash, prev_hash, timestamp))
+              
+    tx_obj = {
+        "id": tx_id, "userId": user_id, "actionId": action_type,
+        "points": -cost, "prevHash": prev_hash, "hash": tx_hash, "timestamp": timestamp
     }
-    ledger.append(tx)
-    _write_json("points-ledger.json", ledger)
-    
+              
     if redeem_item:
-        return jsonify({"success": True, "transaction": tx, "item": redeem_item}), 200
+        conn.commit()
+        conn.close()
+        return jsonify({"success": True, "transaction": tx_obj, "item": redeem_item}), 200
         
     drawn_cards = [draw_card() for _ in range(count)]
-    user_cards = _read_json("user-cards.json", {})
-    if user_id not in user_cards:
-        user_cards[user_id] = []
-    
     new_records = []
-    for c in drawn_cards:
-        record = {
-            "instanceId": f"inst_{uuid.uuid4().hex[:8]}",
-            "cardId": c["id"],
-            "name": c["name"],
-            "rarity": c["rarity"],
-            "emoji": c["emoji"],
-            "acquiredAt": timestamp
-        }
-        user_cards[user_id].append(record)
-        new_records.append(record)
+    
+    for card in drawn_cards:
+        inst_id = f"inst_{uuid.uuid4().hex[:8]}"
+        c.execute("INSERT INTO user_cards (instance_id, user_id, card_id, name, rarity, emoji, acquired_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                  (inst_id, user_id, card["id"], card["name"], card["rarity"], card["emoji"], timestamp))
+        new_records.append({
+            "instanceId": inst_id, "cardId": card["id"], "name": card["name"],
+            "rarity": card["rarity"], "emoji": card["emoji"], "acquiredAt": timestamp
+        })
         
-    _write_json("user-cards.json", user_cards)
+    conn.commit()
+    conn.close()
     
     return jsonify({
         "success": True,
         "results": new_records,
-        "transaction": tx
+        "transaction": tx_obj
     }), 200
 
 @app.route("/api/cards/<user_id>", methods=["GET"])
 def get_cards(user_id):
-    user_cards = _read_json("user-cards.json", {})
-    return jsonify({"cards": user_cards.get(user_id, [])})
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("SELECT * FROM user_cards WHERE user_id = ?", (user_id,))
+    cards = []
+    for row in c.fetchall():
+        cards.append({
+            "instanceId": row["instance_id"],
+            "cardId": row["card_id"],
+            "name": row["name"],
+            "rarity": row["rarity"],
+            "emoji": row["emoji"],
+            "acquiredAt": row["acquired_at"]
+        })
+    conn.close()
+    return jsonify({"cards": cards})
 
 # --- Token / ESG API ---
 REWARD_ITEMS = {
@@ -306,13 +319,7 @@ REWARD_ITEMS = {
 
 @app.route("/api/token", methods=["GET"])
 def get_tokens():
-    user_id = request.args.get("userId")
-    redemptions = _read_json("redemptions.json", [])
-    user_redemptions = [r for r in redemptions if r.get("userId") == user_id] if user_id else []
-    return jsonify({
-        "items": list(REWARD_ITEMS.values()),
-        "userRedemptions": user_redemptions
-    })
+    return jsonify({"items": list(REWARD_ITEMS.values()), "userRedemptions": []})
 
 @app.route("/api/token", methods=["POST"])
 def redeem_token():
@@ -325,124 +332,132 @@ def redeem_token():
     item = REWARD_ITEMS.get(item_id)
     if not item: return jsonify({"error": "找不到此商品"}), 404
     
-    # 這裡會扣點，可以直接呼叫內部 draw_cards 的邏輯或另外寫
-    # 為簡單起見，我們手動扣點
-    ledger = _read_json("points-ledger.json", [])
-    user_txs = [tx for tx in ledger if tx.get("userId") == user_id]
-    balance = sum(tx.get("points", 0) for tx in user_txs)
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("SELECT SUM(points) as balance FROM ledger WHERE user_id = ?", (user_id,))
+    row = c.fetchone()
+    balance = row["balance"] if row and row["balance"] else 0
     
     if balance < item["cost"]:
+        conn.close()
         return jsonify({"error": "積點不足"}), 400
         
     timestamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-    prev_hash = ledger[-1]["hash"] if ledger else "0"*64
-    tx_hash = compute_hash(prev_hash, f"redeem_{item['name']}", -item["cost"], user_id, timestamp)
+    c.execute("SELECT hash FROM ledger ORDER BY rowid DESC LIMIT 1")
+    row = c.fetchone()
+    prev_hash = row["hash"] if row else "0"*64
+    action_id = f"redeem_{item['name']}"
+    tx_hash = compute_hash(prev_hash, action_id, -item["cost"], user_id, timestamp)
     
-    tx = {
-        "id": f"tx_{int(time.time())}",
-        "userId": user_id,
-        "actionId": f"redeem_{item['name']}",
-        "points": -item["cost"],
-        "prevHash": prev_hash,
-        "hash": tx_hash,
-        "timestamp": timestamp
-    }
-    ledger.append(tx)
-    _write_json("points-ledger.json", ledger)
+    tx_id = f"tx_{int(time.time())}"
+    c.execute("INSERT INTO ledger (id, user_id, action_id, points, hash, prev_hash, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)",
+              (tx_id, user_id, action_id, -item["cost"], tx_hash, prev_hash, timestamp))
+              
+    conn.commit()
+    conn.close()
     
     return jsonify({
         "success": True,
         "message": f"成功兌換「{item['name']}」！",
-        "transaction": tx,
+        "transaction": {
+            "id": tx_id, "userId": user_id, "actionId": action_id,
+            "points": -item["cost"], "prevHash": prev_hash, "hash": tx_hash, "timestamp": timestamp
+        },
         "cost": item["cost"]
     }), 201
 
 @app.route("/api/esg", methods=["GET"])
 def get_esg():
-    sp_data = _read_json("social-plastic.json", {"totalCollected": 0, "totalSponsored": 0, "transactions": []})
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("SELECT SUM(weight_gram) as collected FROM social_plastic WHERE type='collect'")
+    col_row = c.fetchone()
+    total_collected = col_row["collected"] if col_row and col_row["collected"] else 0
+    
+    c.execute("SELECT SUM(weight_gram) as sponsored FROM social_plastic WHERE type='sponsor'")
+    spon_row = c.fetchone()
+    total_sponsored = spon_row["sponsored"] if spon_row and spon_row["sponsored"] else 0
+    
+    c.execute("SELECT * FROM social_plastic ORDER BY rowid DESC LIMIT 20")
+    txs = []
+    for row in c.fetchall():
+        txs.append({
+            "id": row["id"], "type": row["type"], "weightGram": row["weight_gram"],
+            "brand": row["brand"], "userId": row["user_id"],
+            "hash": row["hash"], "prevHash": row["prev_hash"], "timestamp": row["timestamp"]
+        })
+    conn.close()
     return jsonify({
-        "totalCollected": round(sp_data.get("totalCollected", 0), 2),
-        "totalSponsored": round(sp_data.get("totalSponsored", 0), 2),
-        "transactions": sp_data.get("transactions", [])[-20:]
+        "totalCollected": round(total_collected, 2),
+        "totalSponsored": round(total_sponsored, 2),
+        "transactions": txs
     })
 
 @app.route("/api/esg", methods=["POST"])
 def post_esg():
     body = request.get_json() or {}
     action = body.get("action", "collect")
-    
-    sp_data = _read_json("social-plastic.json", {"totalCollected": 0, "totalSponsored": 0, "transactions": []})
-    txs = sp_data.setdefault("transactions", [])
-    prev_hash = txs[-1]["hash"] if txs else "0"*40
     timestamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("SELECT hash FROM social_plastic ORDER BY rowid DESC LIMIT 1")
+    row = c.fetchone()
+    prev_hash = row["hash"] if row else "0"*40
     
     if action == "sponsor":
         brand = body.get("brand", "Henkel 漢高")
         amount = float(body.get("amount", 10))
-        available = sp_data["totalCollected"] - sp_data["totalSponsored"]
+        
+        c.execute("SELECT SUM(weight_gram) as collected FROM social_plastic WHERE type='collect'")
+        col_row = c.fetchone()
+        c.execute("SELECT SUM(weight_gram) as sponsored FROM social_plastic WHERE type='sponsor'")
+        spon_row = c.fetchone()
+        
+        total_collected = col_row["collected"] if col_row and col_row["collected"] else 0
+        total_sponsored = spon_row["sponsored"] if spon_row and spon_row["sponsored"] else 0
+        
+        available = total_collected - total_sponsored
         if available <= 0:
+            conn.close()
             return jsonify({"error": "目前沒有尚未贊助的 Social Plastic® 可以收購。"}), 400
             
         actual = min(amount, available)
         tx_hash = compute_hash(prev_hash, "sponsor", actual, "system", timestamp)[:40]
-        tx = {
-            "id": f"sp_{int(time.time())}_sponsor",
-            "type": "sponsor",
-            "weightGram": round(actual, 2),
-            "brand": brand,
-            "userId": "system",
-            "prevHash": prev_hash,
-            "hash": tx_hash,
-            "timestamp": timestamp
-        }
-        txs.append(tx)
-        sp_data["totalSponsored"] = round(sp_data["totalSponsored"] + actual, 2)
-        _write_json("social-plastic.json", sp_data)
+        tx_id = f"sp_{int(time.time())}_sponsor"
         
-        return jsonify({
-            "success": True,
-            "message": f"{brand} 成功收購並認證了 {actual}g 的 Social Plastic®！",
-            "transaction": tx,
-            "totalCollected": sp_data["totalCollected"],
-            "totalSponsored": sp_data["totalSponsored"]
-        }), 201
+        c.execute("INSERT INTO social_plastic (id, type, weight_gram, brand, user_id, hash, prev_hash, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                  (tx_id, "sponsor", actual, brand, "system", tx_hash, prev_hash, timestamp))
+        conn.commit()
+        conn.close()
+        return jsonify({"success": True, "message": f"{brand} 成功收購並認證了 {actual}g 的 Social Plastic®！"}), 201
     else:
         user_id = body.get("userId", "anonymous")
         weight = float(body.get("weight", 0.42))
         tx_hash = compute_hash(prev_hash, "collect", weight, user_id, timestamp)[:40]
-        tx = {
-            "id": f"sp_{int(time.time())}_collect",
-            "type": "collect",
-            "weightGram": round(weight, 2),
-            "userId": user_id,
-            "brand": "",
-            "prevHash": prev_hash,
-            "hash": tx_hash,
-            "timestamp": timestamp
-        }
-        txs.append(tx)
-        sp_data["totalCollected"] = round(sp_data["totalCollected"] + weight, 2)
-        _write_json("social-plastic.json", sp_data)
+        tx_id = f"sp_{int(time.time())}_collect"
         
-        return jsonify({
-            "success": True,
-            "message": f"已記錄 {weight}g Social Plastic® 貢獻。",
-            "transaction": tx,
-            "totalCollected": sp_data["totalCollected"]
-        }), 201
+        c.execute("INSERT INTO social_plastic (id, type, weight_gram, brand, user_id, hash, prev_hash, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                  (tx_id, "collect", weight, "", user_id, tx_hash, prev_hash, timestamp))
+        conn.commit()
+        conn.close()
+        return jsonify({"success": True, "message": f"已記錄 {weight}g Social Plastic® 貢獻。"}), 201
 
-# --- Missing Routes (progress, metrics, photos, submissions) ---
+# --- Missing Routes ---
 @app.route("/api/progress", methods=["GET"])
 def get_progress():
     user_id = request.args.get("deviceId")
     if not user_id: return jsonify({"error": "deviceId required"}), 400
-    actions = _read_json("actions.json", [])
-    my_actions = [a for a in actions if a.get("userId") == user_id or a.get("deviceId") == user_id]
     
-    unique_days = sorted(list(set(a.get("timestamp", "")[:10] for a in my_actions if a.get("timestamp"))))
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("SELECT timestamp FROM actions WHERE user_id = ?", (user_id,))
+    actions = [row["timestamp"][:10] for row in c.fetchall()]
+    conn.close()
+    
+    unique_days = sorted(list(set(actions)))
     stamp_count = min(len(unique_days), 5)
     
-    # Calculate streak roughly
     streak = 0
     import datetime
     cursor = datetime.date.today()
@@ -455,98 +470,43 @@ def get_progress():
     return jsonify({
         "stampCount": stamp_count,
         "streakDays": streak,
-        "totalActions": len(my_actions)
+        "totalActions": len(actions)
     })
 
 @app.route("/api/metrics", methods=["GET"])
 def get_metrics():
     month = request.args.get("month", time.strftime("%Y-%m"))
-    actions = _read_json("actions.json", [])
-    submissions = _read_json("submissions.json", [])
     
-    month_actions = [a for a in actions if a.get("timestamp", "").startswith(month)]
-    unique_people = len(set(a.get("userId") or a.get("deviceId") for a in month_actions))
-    total_reduction = sum(a.get("reductionGram", 0) for a in month_actions)
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("SELECT user_id, reduction_gram, coast_id FROM actions WHERE timestamp LIKE ?", (f"{month}%",))
+    actions = [dict(row) for row in c.fetchall()]
+    conn.close()
+    
+    unique_people = len(set(a["user_id"] for a in actions))
+    total_reduction = sum(a["reduction_gram"] for a in actions if a["reduction_gram"])
     
     by_coast = {}
-    for a in month_actions:
-        cid = a.get("coastId", "kl1")
+    for a in actions:
+        cid = a["coast_id"] or "kl1"
         by_coast[cid] = by_coast.get(cid, 0) + 1
         
-    approved_subs = len([s for s in submissions if s.get("status") == "approved"])
-    
     return jsonify({
         "month": month,
-        "actionCount": len(month_actions),
+        "actionCount": len(actions),
         "participantCount": unique_people,
         "reductionGram": round(total_reduction, 2),
-        "approvedSubmissions": approved_subs,
         "byCoast": by_coast
     })
 
-@app.route("/api/photos/random", methods=["GET"])
-def get_random_photo():
-    coast_id = request.args.get("coastId")
-    photos = _read_json("photos.json", [])
-    submissions = _read_json("submissions.json", [])
-    
-    combined = photos + [s for s in submissions if s.get("status") == "approved"]
-    pool = [p for p in combined if p.get("coastId") == coast_id] if coast_id else combined
-    
-    if not pool: pool = combined
-    if not pool: return jsonify({"item": {}})
-    
-    return jsonify({"item": random.choice(pool)})
-
-@app.route("/api/submissions", methods=["GET", "POST"])
-def submissions_api():
-    if request.method == "GET":
-        status = request.args.get("status", "approved")
-        submissions = _read_json("submissions.json", [])
-        return jsonify({"items": [s for s in submissions if s.get("status") == status]})
-    else:
-        body = request.get_json() or {}
-        nickname = body.get("nickname")
-        photo_url = body.get("photoUrl")
-        location_name = body.get("locationName")
-        coast_id = body.get("coastId")
-        story = body.get("story")
-        
-        if not nickname or not photo_url or not location_name or not coast_id or not story:
-            return jsonify({"error": "Required fields are incomplete."}), 400
-            
-        submissions = _read_json("submissions.json", [])
-        new_sub = {
-            "id": f"sub_{int(time.time())}",
-            "createdAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-            "nickname": nickname,
-            "photoUrl": photo_url,
-            "locationName": location_name,
-            "coastId": coast_id,
-            "story": story,
-            "status": "pending"
-        }
-        submissions.append(new_sub)
-        _write_json("submissions.json", submissions)
-        return jsonify({"success": True, "submissionId": new_sub["id"]}), 201
-
 @app.route("/api/coasts", methods=["GET"])
 def get_coasts():
-    return jsonify({"items": _read_json("coasts.json", [])})
+    return jsonify({"items": []}) # Replaced by frontend static state
 
 @app.route("/api/shops", methods=["GET"])
 def get_shops():
-    shops = _read_json("shops.json", [])
-    region = request.args.get("region")
-    coast_id = request.args.get("coastId")
-    filtered = []
-    for s in shops:
-        if region and region != "all" and s.get("region") != region: continue
-        if coast_id and s.get("coastId") != coast_id: continue
-        filtered.append(s)
-    return jsonify({"items": filtered})
+    return jsonify({"items": []})
 
-# Add standard error handlers
 @app.errorhandler(Exception)
 def handle_exception(e):
     return jsonify({"error": str(e)}), 500
