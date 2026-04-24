@@ -153,17 +153,34 @@ if (!IS_DEMO) {
     }
   });
 } else {
-  // Demo 模式：若有本地 session 直接進入
+  // Demo 模式：驗證本地 session 是否仍然有效
   if (ServerAuth.isLoggedIn()) {
-    const userId = ServerAuth.getUserId();
-    const name = ServerAuth.getDisplayName();
-    if (userInfo) userInfo.style.display = "block";
-    if (displayNameEl) displayNameEl.innerText = name;
-    setTimeout(() => {
-      if (window.initApp) window.initApp();
-      if (window.initWallet) window.initWallet(userId);
-      if (window.initGacha) window.initGacha(userId);
-    }, 100);
+    (async () => {
+      try {
+        const token = ServerAuth.getToken();
+        const res = await fetch("/api/auth/verify", {
+          headers: { "x-session-token": token }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.valid) {
+            const userId = data.userId || ServerAuth.getUserId();
+            const name = data.displayName || ServerAuth.getDisplayName();
+            ServerAuth.setUser(userId, name);
+            if (userInfo) userInfo.style.display = "block";
+            if (displayNameEl) displayNameEl.innerText = name;
+            setTimeout(() => {
+              if (window.initApp) window.initApp();
+              if (window.initWallet) window.initWallet(userId);
+              if (window.initGacha) window.initGacha(userId);
+            }, 100);
+            return;
+          }
+        }
+      } catch (e) { console.warn("session verify failed:", e); }
+      // 驗證失敗：清除本地 session，不自動進入
+      ServerAuth.clear();
+    })();
   }
 }
 

@@ -5,12 +5,12 @@ gsap.registerPlugin(MotionPathPlugin);
 const state = {
   coasts: [
     { id:'kl1', name:'基隆嶼海域', tag:'北部海域', cityRoute:'城市排水孔 → 基隆河 → 淡水河口 → 基隆嶼', trivia:'龍蝦與黑鳶的家，也是台北人的後花園。', img:'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&q=80&w=1200' },
-    { id:'td1', name:'台東三仙台', tag:'東部海域', cityRoute:'部落排水口 → 卑南溪 → 太平洋 → 三仙台', trivia:'擁有台灣最美的八拱橋，是第一道曙光照耀之地。', img:'https://images.unsplash.com/photo-1505118380757-91f5f45d8de4?auto=format&fit=crop&q=80&w=1200' },
+    { id:'td1', name:'台東三仙台', tag:'東部海域', cityRoute:'部落排水口 → 卑南溪 → 太平洋 → 三仙台', trivia:'擁有台灣最美的八拱橋，是第一道曙光照耀之地。', img:'https://images.unsplash.com/photo-1509233725247-49e657c25aa0?auto=format&fit=crop&q=80&w=1200' },
     { id:'ph1', name:'澎湖七美', tag:'離島海域', cityRoute:'城市水溝 → 台灣海峽 → 澎湖群島 → 七美', trivia:'雙心石滬的古老智慧，需要我們這一代繼續傳承。', img:'https://images.unsplash.com/photo-1468413253725-0d5181091126?auto=format&fit=crop&q=80&w=1200' },
-    { id:'hl1', name:'花蓮七星潭', tag:'東部海域', cityRoute:'美崙溪 → 太平洋 → 七星潭月牙灣', trivia:'湛藍的礫石海灘，是東台灣最純淨的呼吸。', img:'https://images.unsplash.com/photo-1519451241324-20b4ea2c4220?auto=format&fit=crop&q=80&w=1200' },
+    { id:'hl1', name:'花蓮七星潭', tag:'東部海域', cityRoute:'美崙溪 → 太平洋 → 七星潭月牙灣', trivia:'湛藍的礫石海灘，是東台灣最純淨的呼吸。', img:'https://images.unsplash.com/photo-1505118380757-91f5f45d8de4?auto=format&fit=crop&q=80&w=1200' },
     { id:'kt1', name:'墾丁後壁湖', tag:'南部海域', cityRoute:'恆春水溝 → 巴士海峽 → 後壁湖珊瑚礁', trivia:'台灣最具代表性的珊瑚礁棲息地，潛水者的天堂。', img:'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&q=80&w=1200' },
     { id:'yl1', name:'宜蘭龜山島', tag:'東北部海域', cityRoute:'蘭陽溪 → 宜蘭外海 → 龜山島海域', trivia:'台灣最活躍的海底溫泉，牛奶海的秘境所在。', img:'https://images.unsplash.com/photo-1518837695005-2083093ee35b?auto=format&fit=crop&q=80&w=1200' },
-    { id:'tp1', name:'新北野柳', tag:'北部海域', cityRoute:'北海岸排水 → 金山外海 → 野柳地質公園', trivia:'女王頭的故鄉，千萬年地質奇觀的見證。', img:'https://images.unsplash.com/photo-1559827260-dc66d52bef19?auto=format&fit=crop&q=80&w=1200' },
+    { id:'tp1', name:'新北野柳', tag:'北部海域', cityRoute:'北海岸排水 → 金山外海 → 野柳地質公園', trivia:'女王頭的故鄉，千萬年地質奇觀的見證。', img:'https://images.unsplash.com/photo-1498623116890-37e912163d5d?auto=format&fit=crop&q=80&w=1200' },
     { id:'km1', name:'金門海域', tag:'離島海域', cityRoute:'城市水道 → 廈門灣 → 金門南海岸', trivia:'鱟的故鄉，活化石與戰地遺跡共存的獨特海岸。', img:'https://images.unsplash.com/photo-1476673160081-cf065607f449?auto=format&fit=crop&q=80&w=1200' }
   ],
   shops: [
@@ -132,7 +132,16 @@ window.startRitual = async function() {
             `守護行動完成！鏈上雜湊：${(actionResult.txHash || '').slice(0, 8)}…`
           );
         }
+        // 同步更新錢包顯示
+        if (window.refreshWallet) window.refreshWallet();
       }, 6200);
+
+      // 同步記錄 Social Plastic® 貢獻至 Python API
+      fetch("/api/esg", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "collect", userId, weight: actionResult.reductionGram || 0.42 }),
+      }).catch(e => console.warn("ESG record:", e));
     }
 
     // 2. 取隨機獎勵照片

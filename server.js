@@ -472,6 +472,20 @@ function handleApi(req, res, urlObj) {
     }).catch(err => sendJson(res, 500, { error: err.message }));
   }
 
+  // ── 新功能：驗證 session token ─────────────────────────────
+
+  if (pathname === "/api/auth/verify" && method === "GET") {
+    const userId = getAuthedUserId(req);
+    if (!userId) return sendJson(res, 401, { valid: false });
+    const users = readJson("users.json");
+    const user = users.find(u => u.id === userId);
+    return sendJson(res, 200, {
+      valid: true,
+      userId,
+      displayName: user ? user.displayName : "守護者"
+    });
+  }
+
   // ── 新功能：使用者註冊 ────────────────────────────────────
 
   if (pathname === "/api/auth/register" && method === "POST") {

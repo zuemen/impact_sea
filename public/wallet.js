@@ -153,23 +153,20 @@ window.redeemReward = async (itemId) => {
   if (!confirm(`確定要用 ${item.cost} OCT 兌換「${item.name}」嗎？`)) return;
 
   try {
-    const token = window.getSessionToken ? window.getSessionToken() : null;
-    const headers = { "Content-Type": "application/json" };
-    if (token) headers["x-session-token"] = token;
-
-    // 使用抽卡 API 的 spend 機制扣除積點 (模擬代幣兌換)
-    const res = await fetch("/api/cards/draw", {
+    // 呼叫 Python API 記錄兌換交易
+    const res = await fetch("/api/token", {
       method: "POST",
-      headers,
-      body: JSON.stringify({ userId: walletUserId, count: 0, redeemItem: item.name, redeemCost: item.cost }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: walletUserId, itemId: item.id }),
     });
+    const data = await res.json();
 
-    // 即使 API 回傳錯誤也模擬成功（MVP 展示用）
     if (window.showBonusToast) {
-      window.showBonusToast(item.cost, `兌換成功：${item.name}！已扣除 ${item.cost} OCT`);
+      const txHash = data.transaction ? data.transaction.hash.slice(0, 8) : '';
+      window.showBonusToast(item.cost, `兌換成功：${item.name}！鏈上 Hash: ${txHash}…`);
     }
 
-    // 模擬扣除餘額
+    // 扣除餘額
     walletData.balance = Math.max(0, balance - item.cost);
     initRewardShop();
     renderWallet();
@@ -188,7 +185,7 @@ async function initESGDashboard() {
   section.style.display = "block";
 
   try {
-    const res = await fetch("/api/esg/social-plastic");
+    const res = await fetch("/api/esg");
     if (!res.ok) return;
     const data = await res.json();
 
@@ -227,10 +224,10 @@ async function initESGDashboard() {
 
 window.simulateSponsor = async () => {
   try {
-    const res = await fetch("/api/esg/sponsor", {
+    const res = await fetch("/api/esg", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ brand: "Henkel 漢高", amount: 10 }),
+      body: JSON.stringify({ action: "sponsor", brand: "Henkel 漢高", amount: 10 }),
     });
     const data = await res.json();
     if (!res.ok) {

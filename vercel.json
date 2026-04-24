@@ -2,6 +2,14 @@
   "version": 2,
   "builds": [
     {
+      "src": "api/token.py",
+      "use": "@vercel/python"
+    },
+    {
+      "src": "api/esg.py",
+      "use": "@vercel/python"
+    },
+    {
       "src": "server.js",
       "use": "@vercel/node"
     },
@@ -11,6 +19,14 @@
     }
   ],
   "rewrites": [
+    {
+      "source": "/api/token",
+      "destination": "/api/token.py"
+    },
+    {
+      "source": "/api/esg",
+      "destination": "/api/esg.py"
+    },
     {
       "source": "/api/(.*)",
       "destination": "/server.js"
