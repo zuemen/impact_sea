@@ -431,6 +431,121 @@ def post_esg():
             "totalCollected": sp_data["totalCollected"]
         }), 201
 
+# --- Missing Routes (progress, metrics, photos, submissions) ---
+@app.route("/api/progress", methods=["GET"])
+def get_progress():
+    user_id = request.args.get("deviceId")
+    if not user_id: return jsonify({"error": "deviceId required"}), 400
+    actions = _read_json("actions.json", [])
+    my_actions = [a for a in actions if a.get("userId") == user_id or a.get("deviceId") == user_id]
+    
+    unique_days = sorted(list(set(a.get("timestamp", "")[:10] for a in my_actions if a.get("timestamp"))))
+    stamp_count = min(len(unique_days), 5)
+    
+    # Calculate streak roughly
+    streak = 0
+    import datetime
+    cursor = datetime.date.today()
+    for _ in range(365):
+        key = cursor.strftime("%Y-%m-%d")
+        if key not in unique_days: break
+        streak += 1
+        cursor -= datetime.timedelta(days=1)
+        
+    return jsonify({
+        "stampCount": stamp_count,
+        "streakDays": streak,
+        "totalActions": len(my_actions)
+    })
+
+@app.route("/api/metrics", methods=["GET"])
+def get_metrics():
+    month = request.args.get("month", time.strftime("%Y-%m"))
+    actions = _read_json("actions.json", [])
+    submissions = _read_json("submissions.json", [])
+    
+    month_actions = [a for a in actions if a.get("timestamp", "").startswith(month)]
+    unique_people = len(set(a.get("userId") or a.get("deviceId") for a in month_actions))
+    total_reduction = sum(a.get("reductionGram", 0) for a in month_actions)
+    
+    by_coast = {}
+    for a in month_actions:
+        cid = a.get("coastId", "kl1")
+        by_coast[cid] = by_coast.get(cid, 0) + 1
+        
+    approved_subs = len([s for s in submissions if s.get("status") == "approved"])
+    
+    return jsonify({
+        "month": month,
+        "actionCount": len(month_actions),
+        "participantCount": unique_people,
+        "reductionGram": round(total_reduction, 2),
+        "approvedSubmissions": approved_subs,
+        "byCoast": by_coast
+    })
+
+@app.route("/api/photos/random", methods=["GET"])
+def get_random_photo():
+    coast_id = request.args.get("coastId")
+    photos = _read_json("photos.json", [])
+    submissions = _read_json("submissions.json", [])
+    
+    combined = photos + [s for s in submissions if s.get("status") == "approved"]
+    pool = [p for p in combined if p.get("coastId") == coast_id] if coast_id else combined
+    
+    if not pool: pool = combined
+    if not pool: return jsonify({"item": {}})
+    
+    return jsonify({"item": random.choice(pool)})
+
+@app.route("/api/submissions", methods=["GET", "POST"])
+def submissions_api():
+    if request.method == "GET":
+        status = request.args.get("status", "approved")
+        submissions = _read_json("submissions.json", [])
+        return jsonify({"items": [s for s in submissions if s.get("status") == status]})
+    else:
+        body = request.get_json() or {}
+        nickname = body.get("nickname")
+        photo_url = body.get("photoUrl")
+        location_name = body.get("locationName")
+        coast_id = body.get("coastId")
+        story = body.get("story")
+        
+        if not nickname or not photo_url or not location_name or not coast_id or not story:
+            return jsonify({"error": "Required fields are incomplete."}), 400
+            
+        submissions = _read_json("submissions.json", [])
+        new_sub = {
+            "id": f"sub_{int(time.time())}",
+            "createdAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "nickname": nickname,
+            "photoUrl": photo_url,
+            "locationName": location_name,
+            "coastId": coast_id,
+            "story": story,
+            "status": "pending"
+        }
+        submissions.append(new_sub)
+        _write_json("submissions.json", submissions)
+        return jsonify({"success": True, "submissionId": new_sub["id"]}), 201
+
+@app.route("/api/coasts", methods=["GET"])
+def get_coasts():
+    return jsonify({"items": _read_json("coasts.json", [])})
+
+@app.route("/api/shops", methods=["GET"])
+def get_shops():
+    shops = _read_json("shops.json", [])
+    region = request.args.get("region")
+    coast_id = request.args.get("coastId")
+    filtered = []
+    for s in shops:
+        if region and region != "all" and s.get("region") != region: continue
+        if coast_id and s.get("coastId") != coast_id: continue
+        filtered.append(s)
+    return jsonify({"items": filtered})
+
 # Add standard error handlers
 @app.errorhandler(Exception)
 def handle_exception(e):
