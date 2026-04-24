@@ -226,3 +226,169 @@ textarea:-webkit-autofill:focus {
 
 ::-webkit-scrollbar { width: 3px; }
 ::-webkit-scrollbar-thumb { background: var(--sea-teal); }
+
+/* ═══════════════════════════════════════════════════
+   新增模塊：登入/註冊 / 積點錢包 / 抽卡 / 卡片收藏
+   ═══════════════════════════════════════════════════ */
+
+/* ── Auth Tabs ─────────────────────────────────── */
+.auth-tabs {
+  display: flex; gap: 0; margin-bottom: 32px;
+  border-bottom: 1px solid var(--glass-border);
+}
+.auth-tab {
+  flex: 1; background: none; border: none; padding: 12px 0;
+  color: var(--sea-slate); font-family: inherit; font-size: 0.8rem;
+  letter-spacing: 3px; text-transform: uppercase; cursor: pointer;
+  border-bottom: 2px solid transparent; margin-bottom: -1px;
+  transition: all 0.2s;
+}
+.auth-tab.active { color: var(--sea-sand); border-bottom-color: var(--sea-teal); }
+.auth-tab:hover { color: var(--sea-sand); }
+
+/* ── 積點錢包 ──────────────────────────────────── */
+.wallet-balance-card {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 28px 32px;
+  background: rgba(43, 103, 106, 0.08);
+  border: 1px solid rgba(43, 103, 106, 0.3);
+  border-radius: 12px; cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+  margin-bottom: 16px;
+}
+.wallet-balance-card:hover { background: rgba(43, 103, 106, 0.15); border-color: rgba(43, 103, 106, 0.6); }
+
+/* 交易記錄列 */
+.tx-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 0; border-bottom: 1px solid var(--glass-border);
+  animation: fadeSlideUp 0.3s ease both;
+}
+.tx-left { display: flex; align-items: center; gap: 12px; }
+.tx-icon { font-size: 0.7rem; width: 20px; text-align: center; }
+.tx-info { display: flex; flex-direction: column; gap: 3px; }
+.tx-reason { font-size: 0.85rem; color: var(--sea-sand); }
+.tx-meta { font-size: 0.65rem; color: var(--sea-slate); letter-spacing: 1px; }
+.tx-hash { font-family: monospace; color: var(--sea-teal); cursor: help; }
+.tx-amount { font-size: 0.95rem; font-weight: 600; letter-spacing: 1px; }
+.tx-earn  { color: #4ade80; }
+.tx-spend { color: #f87171; }
+
+/* 鏈式連結符號 */
+.chain-link {
+  text-align: center; font-size: 0.6rem; color: var(--sea-slate);
+  font-family: monospace; padding: 2px 0; letter-spacing: 1px;
+}
+
+.wallet-empty { color: var(--sea-slate); font-size: 0.85rem; text-align: center; padding: 40px 0; }
+
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── 積點獲得 Toast ─────────────────────────────── */
+.bonus-toast {
+  position: fixed; bottom: 32px; right: 32px; z-index: 9000;
+  display: flex; flex-direction: column; align-items: flex-end; gap: 4px;
+  padding: 16px 24px;
+  background: var(--glass); backdrop-filter: blur(10px);
+  border: 1px solid rgba(212, 175, 55, 0.4);
+  border-radius: 12px;
+  color: var(--sea-sand); font-size: 0.8rem; letter-spacing: 2px;
+  transform: translateY(100px); opacity: 0;
+  transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+  pointer-events: none;
+}
+.bonus-toast.show { transform: translateY(0); opacity: 1; }
+
+/* ── 稀有度機率表 ────────────────────────────────── */
+.rate-table { display: flex; flex-wrap: wrap; gap: 10px; }
+.rate-pill {
+  padding: 5px 14px; border-radius: 999px; font-size: 0.7rem;
+  letter-spacing: 2px; font-weight: 600;
+}
+.rate-common    { background: rgba(137,146,147,0.15); color: #899293; border: 1px solid rgba(137,146,147,0.3); }
+.rate-rare      { background: rgba(43,103,106,0.2);  color: var(--sea-teal); border: 1px solid rgba(43,103,106,0.4); }
+.rate-epic      { background: rgba(124,58,237,0.15); color: #a78bfa; border: 1px solid rgba(124,58,237,0.4); }
+.rate-legendary { background: rgba(212,175,55,0.12); color: var(--gold); border: 1px solid rgba(212,175,55,0.4); }
+
+.stat-pill { font-size: 0.75rem; letter-spacing: 1px; }
+
+/* ── 抽卡按鈕 ───────────────────────────────────── */
+.btn-draw { min-width: 180px; }
+.btn-draw-10 {
+  background: linear-gradient(135deg, rgba(212,175,55,0.15) 0%, rgba(212,175,55,0.05) 100%) !important;
+  border-color: rgba(212,175,55,0.5) !important;
+  color: var(--gold) !important;
+}
+.btn-draw-10:hover { background: rgba(212,175,55,0.25) !important; }
+
+/* ── 抽卡結果卡片 ────────────────────────────────── */
+.gacha-card {
+  width: 160px; min-height: 240px; perspective: 1000px;
+  cursor: default; user-select: none;
+}
+.gacha-card-inner {
+  width: 100%; height: 100%; min-height: 240px;
+  background: var(--glass);
+  border: 1px solid var(--rarity-color);
+  border-radius: 16px;
+  padding: 24px 16px;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  box-shadow: 0 0 24px var(--rarity-glow);
+  position: relative; overflow: hidden;
+}
+.gacha-card-inner::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(circle at 50% 0%, var(--rarity-glow) 0%, transparent 70%);
+  pointer-events: none;
+}
+.gacha-emoji   { font-size: 3rem; filter: drop-shadow(0 0 8px var(--rarity-glow)); }
+.gacha-rarity-badge {
+  font-size: 0.55rem; letter-spacing: 3px; text-transform: uppercase;
+  color: var(--rarity-color); border: 1px solid var(--rarity-color);
+  padding: 2px 8px; border-radius: 999px;
+}
+.gacha-stars   { font-size: 0.8rem; color: var(--rarity-color); letter-spacing: 2px; }
+.gacha-name    { font-size: 0.9rem; font-weight: 600; color: var(--sea-sand); text-align: center; }
+.gacha-power   { font-size: 0.65rem; color: var(--sea-slate); letter-spacing: 2px; text-transform: uppercase; }
+.gacha-power span { color: var(--rarity-color); font-weight: 700; }
+.gacha-desc    { font-size: 0.7rem; color: var(--sea-slate); text-align: center; line-height: 1.5; margin-top: auto; }
+
+/* ── 卡片收藏網格 ────────────────────────────────── */
+.collection-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 12px;
+}
+.collection-card {
+  background: var(--glass);
+  border: 1px solid var(--rarity-color);
+  border-radius: 12px;
+  padding: 14px 10px;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  box-shadow: 0 0 12px var(--rarity-glow);
+  transition: transform 0.2s, box-shadow 0.2s;
+  cursor: default;
+}
+.collection-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 0 24px var(--rarity-glow);
+}
+.coll-emoji  { font-size: 2rem; }
+.coll-rarity { font-size: 0.55rem; letter-spacing: 2px; text-transform: uppercase; color: var(--rarity-color); }
+.coll-name   { font-size: 0.78rem; color: var(--sea-sand); text-align: center; }
+.coll-power  { font-size: 0.65rem; color: var(--sea-teal); }
+
+/* ── RWD 手機調整 ────────────────────────────────── */
+@media (max-width: 600px) {
+  .wallet-balance-card { padding: 20px; }
+  .gacha-card { width: 130px; }
+  .gacha-card-inner { min-height: 200px; padding: 18px 12px; }
+  .gacha-emoji { font-size: 2.2rem; }
+  .btn-draw { min-width: 140px; font-size: 0.75rem; }
+  .collection-grid { grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); }
+  .auth-tabs { margin-bottom: 20px; }
+  .bonus-toast { right: 16px; bottom: 16px; }
+}

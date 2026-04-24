@@ -1,0 +1,11 @@
+node_modules/
+
+# 使用者敏感資料（密碼雜湊、session token）
+data/users.json
+data/sessions.json
+data/user-cards.json
+data/points-ledger.json
+
+# 系統檔
+.DS_Store
+*.log

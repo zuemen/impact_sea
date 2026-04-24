@@ -110,9 +110,19 @@ async function startRitual() {
   el.actionStatus.innerText = "正在感應海洋連結...";
 
   try {
-    // 1. 先儲存行動
-    await DB.saveAction(userId, { coastId: state.currentCoastId, verifiedItems: checked });
-    
+    // 1. 先儲存行動（server 同時記錄積點）
+    const actionResult = await DB.saveAction(userId, { coastId: state.currentCoastId, verifiedItems: checked });
+
+    // 行動完成積點提示
+    if (actionResult && actionResult.pointsEarned) {
+      setTimeout(() => {
+        window.showBonusToast && window.showBonusToast(
+          actionResult.pointsEarned,
+          `守護行動完成！鏈上雜湊：${(actionResult.txHash || '').slice(0, 8)}…`
+        );
+      }, 6000); // 等動畫後顯示
+    }
+
     // 2. 獲取獎勵與背景
     state.reward = await DB.getRandomReward(state.currentCoastId);
     const coast = randomCoast;

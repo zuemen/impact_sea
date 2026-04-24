@@ -26,17 +26,32 @@
       <p class="portal-text">TOUCH TO AWAKEN</p>
   </div>
 
-  <!-- 2. 登入介面 -->
+  <!-- 2. 登入 / 註冊介面 -->
   <div id="auth-overlay" style="display: none;">
     <div class="auth-box">
-      <p style="letter-spacing: 5px; margin-bottom: 40px; text-transform: uppercase; font-size: 0.7rem; color: var(--sea-teal);">Identification</p>
-      <h2 style="font-weight: 200; margin-bottom: 40px;">身分標記</h2>
+      <p style="letter-spacing: 5px; margin-bottom: 24px; text-transform: uppercase; font-size: 0.7rem; color: var(--sea-teal);">Identification</p>
+      <h2 style="font-weight: 200; margin-bottom: 24px;">身分標記</h2>
+
+      <!-- Tab 切換 -->
+      <div class="auth-tabs">
+        <button id="auth-tab-login" class="auth-tab active" onclick="authMode='login'; renderAuthForm()">登入</button>
+        <button id="auth-tab-register" class="auth-tab" onclick="authMode='register'; renderAuthForm()">註冊</button>
+      </div>
+
       <form id="auth-form">
+        <!-- 僅註冊顯示 -->
+        <div id="auth-register-extra" style="display:none;">
+          <input type="text" id="auth-display-name" class="input-altar" placeholder="守護者暱稱">
+        </div>
         <input type="email" id="auth-email" class="input-altar" placeholder="電子信箱">
-        <input type="password" id="auth-pw" class="input-altar" placeholder="密碼">
-        <button type="submit" class="btn-ignite" style="margin-top: 30px;">確認登入</button>
+        <input type="password" id="auth-pw" class="input-altar" placeholder="密碼（至少 6 字元）">
+        <button type="submit" id="auth-submit-btn" class="btn-ignite" style="margin-top: 30px;">確認登入</button>
       </form>
-      <p id="auth-error" style="color: var(--sea-slate); font-size: 0.7rem; margin-top: 20px;"></p>
+      <p id="auth-error" style="color: #e57373; font-size: 0.7rem; margin-top: 16px; min-height: 1em;"></p>
+      <p id="auth-switch-link" onclick="window.switchAuthMode()"
+         style="font-size:0.72rem; color:var(--sea-teal); cursor:pointer; margin-top:8px; letter-spacing:1px;">
+        還沒有帳號？立即註冊 →
+      </p>
     </div>
   </div>
 
@@ -210,10 +225,83 @@
         </form>
     </section>
 
+    <!-- ══ 8. 積點錢包（區塊鏈帳本） ══ -->
+    <section id="wallet-section" class="altar-panel" style="display:none; margin-top:100px; max-width:800px; margin-left:auto; margin-right:auto;">
+      <span class="ritual-title">Blockchain Points / 守護積點</span>
+      <h2 style="font-weight:200; margin-bottom:8px;">積點帳本</h2>
+      <p style="color:var(--sea-slate); font-size:0.85rem; font-weight:300; margin-bottom:40px;">每一筆行動都以加密雜湊記錄於鏈上，不可竄改。</p>
+
+      <!-- 積點餘額卡 -->
+      <div class="wallet-balance-card" onclick="window.toggleLedger()">
+        <div>
+          <span style="font-size:0.6rem; letter-spacing:3px; color:var(--sea-teal); text-transform:uppercase;">Current Balance</span>
+          <div style="display:flex; align-items:baseline; gap:12px; margin-top:8px;">
+            <span id="wallet-balance" style="font-size:3.5rem; font-weight:200; color:var(--sea-sand);">0</span>
+            <span style="font-size:0.9rem; color:var(--sea-slate);">PTS</span>
+          </div>
+        </div>
+        <div style="text-align:right;">
+          <span style="font-size:0.65rem; color:var(--sea-slate); letter-spacing:2px;">CHAIN LEDGER</span>
+          <div id="ledger-chevron" style="font-size:1.2rem; color:var(--sea-teal); margin-top:8px; transition:transform 0.3s;">▼</div>
+        </div>
+      </div>
+
+      <!-- 交易帳本（可展開） -->
+      <div id="wallet-ledger" style="max-height:0; overflow:hidden; transition:max-height 0.5s ease;"></div>
+    </section>
+
+    <!-- ══ 9. 抽卡祭壇 ══ -->
+    <section class="altar-panel" style="margin-top:60px; max-width:800px; margin-left:auto; margin-right:auto;">
+      <span class="ritual-title">Gacha Altar / 抽卡祭壇</span>
+      <h2 style="font-weight:200; margin-bottom:8px;">守護卡召喚</h2>
+      <p style="color:var(--sea-slate); font-size:0.85rem; font-weight:300; margin-bottom:16px;">
+        消耗守護積點召喚海洋守護靈。每次抽卡消耗 <b style="color:var(--sea-teal);">10 積點</b>。
+      </p>
+
+      <!-- 機率說明 -->
+      <div class="rate-table">
+        <span class="rate-pill rate-common">普通 60%</span>
+        <span class="rate-pill rate-rare">稀有 25%</span>
+        <span class="rate-pill rate-epic">史詩 12%</span>
+        <span class="rate-pill rate-legendary">傳說 3%</span>
+      </div>
+
+      <!-- 抽卡按鈕 -->
+      <div style="display:flex; gap:20px; margin-top:40px; flex-wrap:wrap; justify-content:center;">
+        <button id="draw-btn-1" class="btn-ignite btn-draw" onclick="window.doDraw(1)">
+          ✦ 單次召喚 &nbsp;<small style="opacity:0.6;">10 PTS</small>
+        </button>
+        <button id="draw-btn-10" class="btn-ignite btn-draw btn-draw-10" onclick="window.doDraw(10)">
+          ✦✦ 十連召喚 &nbsp;<small style="opacity:0.6;">100 PTS</small>
+        </button>
+      </div>
+      <p id="gacha-error" style="color:#e57373; font-size:0.75rem; text-align:center; margin-top:16px; opacity:0; transition:opacity 0.5s;"></p>
+    </section>
+
+    <!-- ══ 10. 卡片收藏 ══ -->
+    <section class="altar-panel" style="margin-top:60px; max-width:960px; margin-left:auto; margin-right:auto;">
+      <span class="ritual-title">Collection / 守護圖鑑</span>
+      <h2 style="font-weight:200; margin-bottom:16px;">已召喚的守護靈</h2>
+      <div id="collection-stats" style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:30px;"></div>
+      <div id="card-collection" class="collection-grid"></div>
+    </section>
+
     <footer style="margin-top:150px; padding-bottom:80px; text-align:center; opacity:0.3;">
        <div style="width:40px; height:1px; background:var(--sea-sand); margin: 0 auto 30px;"></div>
        <p style="font-size:0.6rem; letter-spacing:4px; text-transform:uppercase;">© 2026 Symbiosis Project</p>
     </footer>
+  </div>
+
+  <!-- 抽卡結果 Modal -->
+  <div id="gacha-result-modal" style="display:none; position:fixed; inset:0; z-index:5000; background:rgba(5,18,33,0.92); display:none; align-items:center; justify-content:center; flex-direction:column; padding:1rem;">
+    <div id="gacha-result-cards" style="display:flex; flex-wrap:wrap; gap:16px; justify-content:center; max-width:900px; max-height:75vh; overflow-y:auto; padding:1rem;"></div>
+    <button onclick="window.closeGachaResult()" class="btn-ignite" style="margin-top:32px; padding:12px 48px; letter-spacing:4px;">收入圖鑑</button>
+  </div>
+
+  <!-- 積點獲得 Toast -->
+  <div id="bonus-toast" class="bonus-toast">
+    <span id="bonus-toast-msg">獲得守護積點！</span>
+    <span id="bonus-toast-pts" style="color:var(--gold); font-weight:700; font-size:1.1rem;">+10 PTS</span>
   </div>
 
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -224,5 +312,11 @@
   <script src="/db.js"></script>
   <script src="/idle.js"></script>
   <script src="/app.js"></script>
+  <script src="/wallet.js"></script>
+  <script src="/gacha.js"></script>
+  <script>
+    // auth.js 中 renderAuthForm 需要在 DOM 完成後才能呼叫
+    renderAuthForm && renderAuthForm();
+  </script>
 </body>
 </html>

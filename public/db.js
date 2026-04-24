@@ -3,14 +3,17 @@
 const IS_DEMO = firebaseConfig.apiKey === "YOUR_API_KEY";
 
 const DB = {
-  // 儲存一次守護行動
+  // 儲存一次守護行動，server 會同步發放積點並回傳 pointsEarned / txHash
   async saveAction(userId, data) {
+    const token = window.getSessionToken ? window.getSessionToken() : null;
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['x-session-token'] = token;
     const res = await fetch('/api/actions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        deviceId: userId, 
-        coastId: data.coastId, 
+      headers,
+      body: JSON.stringify({
+        deviceId: userId,
+        coastId: data.coastId,
         verifiedItems: data.verifiedItems || [],
         locationPoint: data.locationPoint || "unknown"
       })
@@ -19,7 +22,7 @@ const DB = {
       const err = await res.json();
       throw new Error(err.error || '儲存失敗');
     }
-    return await res.json();
+    return await res.json(); // 包含 { action, reward, progress, pointsEarned, newBalance, txHash }
   },
 
   // 取得使用者個人進度（印章數、連續天數）
