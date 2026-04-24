@@ -192,14 +192,49 @@
         }
         
         .archive-trigger { position: absolute; bottom: 60px; right: 30px; z-index: 1000; font-size: 1.8rem; color: var(--accent); opacity: 0.6; cursor: pointer; }
+
+        /* Auth Modal */
+        #auth-modal { position: absolute; inset: 0; background: rgba(0,5,10,0.95); backdrop-filter: blur(10px); z-index: 120000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .auth-box { background: rgba(255,255,255,0.03); border: 1px solid rgba(0, 242, 255, 0.2); border-radius: 15px; padding: 40px; width: 85%; max-width: 350px; text-align: center; box-shadow: 0 0 40px rgba(0, 242, 255, 0.1); }
+        .auth-input { width: 100%; padding: 15px; margin-bottom: 20px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); color: #fff; border-radius: 8px; font-family: 'Montserrat', sans-serif; }
+        .auth-btn { width: 100%; padding: 15px; background: var(--accent); color: #000; border: none; border-radius: 8px; font-weight: 900; letter-spacing: 2px; cursor: pointer; transition: 0.3s; margin-bottom: 15px; }
+        .auth-btn:hover { box-shadow: 0 0 20px var(--accent); }
+        .auth-switch { font-size: 0.8rem; color: #888; cursor: pointer; text-decoration: underline; }
+
+        /* ESG Dashboard */
+        #esg-dashboard { position: absolute; inset: 0; background: var(--m-black); z-index: 105000; display: none; flex-direction: column; padding: 60px 30px; overflow-y: auto; }
+        .esg-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+        .esg-hash { font-family: monospace; font-size: 0.55rem; color: rgba(255,255,255,0.4); word-break: break-all; margin-top: 5px; }
+        .sponsor-btn { padding: 12px 20px; background: var(--gold); color: #000; border: none; border-radius: 5px; font-weight: 900; cursor: pointer; animation: glow-outer 3s infinite; font-size: 0.8rem; letter-spacing: 2px;}
     </style>
 </head>
 <body>
 
+<!-- Auth Modal -->
+<div id="auth-modal" style="display: none;">
+    <div class="auth-box" id="login-box">
+        <h2 style="letter-spacing: 5px; font-weight: 900; margin-bottom: 30px;">守護者登入</h2>
+        <input type="email" id="login-email" class="auth-input" placeholder="Email">
+        <input type="password" id="login-pw" class="auth-input" placeholder="Password">
+        <button class="auth-btn" onclick="window.doLogin()">登入儀式</button>
+        <div class="auth-switch" onclick="window.switchAuth('register')">還不是守護者？加入我們</div>
+        <div id="auth-err" style="color: #ff7675; font-size: 0.8rem; margin-top: 10px; display: none;"></div>
+    </div>
+    <div class="auth-box" id="register-box" style="display: none;">
+        <h2 style="letter-spacing: 5px; font-weight: 900; margin-bottom: 30px;">守護者註冊</h2>
+        <input type="text" id="reg-name" class="auth-input" placeholder="Nickname">
+        <input type="email" id="reg-email" class="auth-input" placeholder="Email">
+        <input type="password" id="reg-pw" class="auth-input" placeholder="Password">
+        <button class="auth-btn" onclick="window.doRegister()">締結契約</button>
+        <div class="auth-switch" onclick="window.switchAuth('login')">已有契約？返回登入</div>
+        <div id="reg-err" style="color: #ff7675; font-size: 0.8rem; margin-top: 10px; display: none;"></div>
+    </div>
+</div>
+
 <!-- 入口儀式 -->
 <div id="mirror-gate">
     <p style="letter-spacing: 0.8em; font-weight: 300; margin-bottom: 40px; opacity: 0.6;">凝視深海 凝視自己</p>
-    <div class="mirror-portal" onclick="window.enterApp()"></div>
+    <div class="mirror-portal" onclick="window.checkAuthAndEnter()"></div>
     <p style="margin-top: 50px; font-size: 0.7rem; letter-spacing: 4px; opacity: 0.3;">TOUCH TO AWAKEN</p>
 </div>
 
@@ -227,7 +262,8 @@
         <p style="font-size: 0.55rem; color: var(--gold); letter-spacing: 3px; font-weight: 900; margin-top: 10px;">ACOLYTE OF THE TIDE</p>
     </div>
     <div onclick="window.toggleGallery(true)" style="padding: 20px 0; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; font-size: 0.9rem;"><i class="fa-solid fa-compass" style="margin-right: 15px;"></i> ARCHIVE</div>
-    <button onclick="window.exportProgress()" style="color: #8ad4ff; background:none; border:none; margin-top: 18px; font-size: 0.78rem; letter-spacing: 2px; cursor: pointer; text-align: left;">EXPORT PROGRESS JSON</button>
+    <div onclick="window.toggleESG(true)" style="padding: 20px 0; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; font-size: 0.9rem; color: var(--accent);"><i class="fa-solid fa-link" style="margin-right: 15px;"></i> SOCIAL PLASTIC®</div>
+    <button onclick="window.logout()" style="color: #ff7675; background:none; border:none; margin-top: 18px; font-size: 0.78rem; letter-spacing: 2px; cursor: pointer; text-align: left; padding: 20px 0;">LOGOUT</button>
     <button onclick="window.resetData()" style="color: #ff7675; background:none; border:none; margin-top: auto; padding-bottom: 30px; font-size: 0.8rem; letter-spacing: 2px; cursor: pointer;">RESET ALL DATA</button>
 </div>
 
@@ -317,6 +353,29 @@
         </div>
         <div id="partner-caption" style="font-size: 0.68rem; color: rgba(255,255,255,0.55); margin-bottom: 8px;"></div>
         <div id="partner-list" class="partner-list"></div>
+    </div>
+</div>
+
+<!-- ESG 儀表板 Modal -->
+<div id="esg-dashboard">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 40px;">
+        <h2 style="letter-spacing: 2px; font-weight: 900;"><span style="color:var(--accent);">SOCIAL</span> PLASTIC®</h2>
+        <i class="fa-solid fa-xmark" onclick="window.toggleESG(false)" style="font-size: 2.5rem; opacity: 0.3; cursor: pointer;"></i>
+    </div>
+    
+    <div class="esg-card" style="text-align: center; border-color: var(--accent);">
+        <p style="font-size: 0.8rem; letter-spacing: 2px; opacity: 0.6; margin: 0 0 10px 0;">生態共創回收塑料</p>
+        <h1 id="esg-total-collected" style="font-size: 2.5rem; margin: 0; color: var(--accent);">0.00 <span style="font-size:1rem;">g</span></h1>
+        <p style="font-size: 0.8rem; letter-spacing: 2px; opacity: 0.6; margin: 10px 0 0 0;">已由品牌收購轉化：<span id="esg-total-sponsored" style="color:var(--gold); font-weight:bold;">0.00</span> g</p>
+    </div>
+
+    <div style="text-align: center; margin-bottom: 30px;">
+        <button class="sponsor-btn" onclick="window.simulateSponsor()">模擬 Henkel 認購 10g</button>
+    </div>
+
+    <h3 style="letter-spacing: 2px; font-size: 0.9rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">區塊鏈透明紀錄</h3>
+    <div id="esg-tx-list" style="margin-top: 15px; display: flex; flex-direction: column; gap: 10px;">
+        <div style="text-align:center; opacity:0.5; font-size:0.8rem; padding: 20px;">載入中...</div>
     </div>
 </div>
 
@@ -420,6 +479,77 @@
         return '未知';
     }
 
+    window.checkAuthAndEnter = () => {
+        const token = localStorage.getItem('session_token');
+        if (!token) {
+            document.getElementById('auth-modal').style.display = 'flex';
+        } else {
+            // Load user profile
+            const uName = localStorage.getItem('user_name');
+            if(uName) document.getElementById('u-name').innerText = uName;
+            window.enterApp();
+        }
+    };
+
+    window.switchAuth = (type) => {
+        document.getElementById('login-box').style.display = type === 'login' ? 'block' : 'none';
+        document.getElementById('register-box').style.display = type === 'register' ? 'block' : 'none';
+        document.getElementById('auth-err').style.display = 'none';
+        document.getElementById('reg-err').style.display = 'none';
+    };
+
+    window.doLogin = async () => {
+        const email = document.getElementById('login-email').value;
+        const pw = document.getElementById('login-pw').value;
+        try {
+            const res = await fetch('/api/auth/login', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password: pw })
+            });
+            const data = await res.json();
+            if(!res.ok) throw new Error(data.error);
+            localStorage.setItem('session_token', data.token);
+            localStorage.setItem('user_id', data.user.id);
+            localStorage.setItem('user_name', data.user.displayName);
+            document.getElementById('u-name').innerText = data.user.displayName;
+            document.getElementById('auth-modal').style.display = 'none';
+            window.enterApp();
+        } catch(e) {
+            const errDiv = document.getElementById('auth-err');
+            errDiv.innerText = e.message; errDiv.style.display = 'block';
+        }
+    };
+
+    window.doRegister = async () => {
+        const email = document.getElementById('reg-email').value;
+        const pw = document.getElementById('reg-pw').value;
+        const name = document.getElementById('reg-name').value;
+        try {
+            const res = await fetch('/api/auth/register', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password: pw, displayName: name })
+            });
+            const data = await res.json();
+            if(!res.ok) throw new Error(data.error);
+            localStorage.setItem('session_token', data.token);
+            localStorage.setItem('user_id', data.user.id);
+            localStorage.setItem('user_name', data.user.displayName);
+            document.getElementById('u-name').innerText = data.user.displayName;
+            document.getElementById('auth-modal').style.display = 'none';
+            window.enterApp();
+        } catch(e) {
+            const errDiv = document.getElementById('reg-err');
+            errDiv.innerText = e.message; errDiv.style.display = 'block';
+        }
+    };
+
+    window.logout = () => {
+        localStorage.removeItem('session_token');
+        localStorage.removeItem('user_id');
+        localStorage.removeItem('user_name');
+        location.reload();
+    };
+
     window.enterApp = () => {
         gsap.to("#mirror-gate", { opacity: 0, scale: 2, duration: 1.5, ease: "power4.inOut", onComplete: () => {
             document.getElementById('mirror-gate').style.display = 'none';
@@ -500,11 +630,26 @@
     }
 
     // --- 印章與入庫 ---
-    window.saveToArchive = (e) => {
+    window.saveToArchive = async (e) => {
         e.stopPropagation();
         const card = document.getElementById('card-3d');
         const icon = document.getElementById('archive-icon');
         const rect = icon.getBoundingClientRect();
+
+        const token = localStorage.getItem('session_token');
+        const deviceId = localStorage.getItem('user_id') || 'local_user';
+
+        try {
+            const res = await fetch('/api/actions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-session-token': token },
+                body: JSON.stringify({ deviceId: deviceId, coastId: current.id, verifiedItems: ['self-container'] })
+            });
+            if(res.ok) {
+                const data = await res.json();
+                console.log("Action synced, txHash:", data.txHash, "spTxHash:", data.spTxHash);
+            }
+        } catch(err) { console.error("Sync error:", err); }
 
         stamps++; if(stamps > 5) stamps = 5;
         localStorage.setItem(KEY_STAMPS, stamps);
@@ -544,6 +689,61 @@
         const m = document.getElementById('map-modal');
         if(on) { m.style.display='flex'; window.renderPartnerMvp(); gsap.from(m,{y:"100%"}); }
         else { gsap.to(m,{y:"100%", onComplete:()=> m.style.display='none'}); }
+    };
+
+    window.toggleESG = (on) => {
+        const m = document.getElementById('esg-dashboard');
+        if(on) { 
+            m.style.display='flex'; 
+            window.loadESGData(); 
+            gsap.from(m,{y:"100%"}); 
+            window.toggleSidebar(false);
+        }
+        else { gsap.to(m,{y:"100%", onComplete:()=> m.style.display='none'}); }
+    };
+
+    window.loadESGData = async () => {
+        try {
+            const res = await fetch('/api/esg/social-plastic');
+            const data = await res.json();
+            document.getElementById('esg-total-collected').innerHTML = `${data.totalCollected} <span style="font-size:1rem;">g</span>`;
+            document.getElementById('esg-total-sponsored').innerText = data.totalSponsored;
+            
+            const list = document.getElementById('esg-tx-list');
+            if(data.transactions.length === 0) {
+                list.innerHTML = '<div style="text-align:center; opacity:0.5; font-size:0.8rem; padding: 20px;">尚未有紀錄</div>';
+            } else {
+                list.innerHTML = data.transactions.map(tx => `
+                    <div class="esg-card" style="margin-bottom: 0; padding: 15px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span style="font-size:0.75rem; color:${tx.type==='sponsor'?'var(--gold)':'var(--accent)'}; font-weight:bold;">
+                                ${tx.type === 'sponsor' ? `<i class="fa-solid fa-handshake"></i> ${tx.brand} 收購` : `<i class="fa-solid fa-leaf"></i> 守護者貢獻`}
+                            </span>
+                            <span style="font-size:0.8rem; font-weight:900;">${tx.weightGram}g</span>
+                        </div>
+                        <div style="font-size: 0.65rem; color: #888; margin-top: 5px;">${new Date(tx.timestamp).toLocaleString()}</div>
+                        <div class="esg-hash">Hash: ${tx.hash}</div>
+                    </div>
+                `).join('');
+            }
+        } catch(e) {
+            console.error(e);
+        }
+    };
+
+    window.simulateSponsor = async () => {
+        try {
+            const res = await fetch('/api/esg/sponsor', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ brand: 'Henkel 漢高', amount: 10 })
+            });
+            const data = await res.json();
+            if(!res.ok) { alert(data.error); return; }
+            alert(data.message);
+            window.loadESGData(); // reload
+        } catch(e) {
+            console.error(e);
+        }
     };
 
     function renderMap(visibleCoastIds) {

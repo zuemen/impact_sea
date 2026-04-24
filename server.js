@@ -204,9 +204,14 @@ function generateToken() {
   return "tok_" + crypto.randomBytes(24).toString("hex");
 }
 
-// ── 區塊鏈積點：計算交易 hash ────────────────────────────────
+// ── 區塊鏈積點與 Social Plastic：計算交易 hash ────────────────────────────────
 function computeTxHash(prevHash, userId, amount, type, reason, timestamp) {
   const data = `${prevHash}|${userId}|${amount}|${type}|${reason}|${timestamp}`;
+  return crypto.createHash("sha256").update(data).digest("hex").slice(0, 40);
+}
+
+function computePlasticTxHash(prevHash, actionId, weightGram, type, brand, timestamp) {
+  const data = `plastic|${prevHash}|${actionId}|${weightGram}|${type}|${brand}|${timestamp}`;
   return crypto.createHash("sha256").update(data).digest("hex").slice(0, 40);
 }
 
@@ -374,6 +379,28 @@ function handleApi(req, res, urlObj) {
       const earnTx = appendTransaction(deviceId, 10, "earn", `守護行動 (${verifiedItems.join(", ")})`, ledger);
       writeJson("points-ledger.json", ledger);
 
+      // --- Social Plastic 區塊鏈紀錄 ---
+      const spData = readJson("social-plastic.json");
+      const lastSpTx = spData.transactions.length > 0 ? spData.transactions[spData.transactions.length - 1] : null;
+      const prevSpHash = lastSpTx ? lastSpTx.hash : "0".repeat(40);
+      const spTimestamp = new Date().toISOString();
+      const spHash = computePlasticTxHash(prevSpHash, action.id, reductionGram, "collect", "none", spTimestamp);
+      
+      const spTx = {
+        id: `sptx_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        actionId: action.id,
+        userId: deviceId,
+        type: "collect",
+        weightGram: reductionGram,
+        brand: "none",
+        prevHash: prevSpHash,
+        hash: spHash,
+        timestamp: spTimestamp,
+      };
+      spData.transactions.push(spTx);
+      spData.totalCollected = Number((spData.totalCollected + reductionGram).toFixed(2));
+      writeJson("social-plastic.json", spData);
+
       const photos = readJson("photos.json");
       const rewardPool = photos.filter(p => p.coastId === coastId);
       const reward = randomItem(rewardPool.length ? rewardPool : photos);
@@ -384,8 +411,65 @@ function handleApi(req, res, urlObj) {
         pointsEarned: 10,
         newBalance: getUserBalance(deviceId, ledger),
         txHash: earnTx.hash,
+        spTxHash: spTx.hash,
       });
     }).catch(() => sendJson(res, 400, { error: "Invalid JSON body." }));
+  }
+
+  // ── 新功能：Social Plastic (ESG) 儀表板與贊助 ───────────────────
+  if (pathname === "/api/esg/social-plastic" && method === "GET") {
+    const spData = readJson("social-plastic.json");
+    // 回傳總覽與最近的交易紀錄
+    return sendJson(res, 200, {
+      totalCollected: spData.totalCollected,
+      totalSponsored: spData.totalSponsored,
+      transactions: spData.transactions.slice(-50).reverse() // 最新的 50 筆
+    });
+  }
+
+  if (pathname === "/api/esg/sponsor" && method === "POST") {
+    return parseBody(req).then(body => {
+      // 模擬品牌贊助 (例如 Henkel)
+      const brand = body.brand || "Henkel 漢高";
+      const sponsorAmount = Number(body.amount) || 10; // 模擬贊助多少克
+
+      const spData = readJson("social-plastic.json");
+      const available = spData.totalCollected - spData.totalSponsored;
+
+      if (available <= 0) {
+        return sendJson(res, 400, { error: "目前沒有尚未贊助的 Social Plastic® 可以收購。" });
+      }
+
+      const actualSponsor = Math.min(sponsorAmount, available);
+      
+      const lastSpTx = spData.transactions.length > 0 ? spData.transactions[spData.transactions.length - 1] : null;
+      const prevSpHash = lastSpTx ? lastSpTx.hash : "0".repeat(40);
+      const spTimestamp = new Date().toISOString();
+      const spHash = computePlasticTxHash(prevSpHash, "sponsor", actualSponsor, "sponsor", brand, spTimestamp);
+
+      const spTx = {
+        id: `sptx_${Date.now()}_sponsor`,
+        actionId: "sponsor",
+        userId: "system",
+        type: "sponsor",
+        weightGram: actualSponsor,
+        brand: brand,
+        prevHash: prevSpHash,
+        hash: spHash,
+        timestamp: spTimestamp,
+      };
+
+      spData.transactions.push(spTx);
+      spData.totalSponsored = Number((spData.totalSponsored + actualSponsor).toFixed(2));
+      writeJson("social-plastic.json", spData);
+
+      return sendJson(res, 201, {
+        message: `${brand} 成功收購並認證了 ${actualSponsor}g 的 Social Plastic®！`,
+        transaction: spTx,
+        totalCollected: spData.totalCollected,
+        totalSponsored: spData.totalSponsored
+      });
+    }).catch(err => sendJson(res, 500, { error: err.message }));
   }
 
   // ── 新功能：使用者註冊 ────────────────────────────────────
@@ -589,6 +673,7 @@ ensureDataFile("users.json", []);
 ensureDataFile("sessions.json", []);
 ensureDataFile("points-ledger.json", []);
 ensureDataFile("user-cards.json", []);
+ensureDataFile("social-plastic.json", { totalCollected: 0, totalSponsored: 0, transactions: [] });
 
 const server = http.createServer((req, res) => {
   const urlObj = new URL(req.url, `http://${req.headers.host}`);
