@@ -128,7 +128,7 @@ def verify():
 @app.route("/api/actions", methods=["POST"])
 def save_action():
     body = request.get_json() or {}
-    user_id = body.get("userId", "anonymous")
+    user_id = body.get("userId") or body.get("deviceId", "anonymous")
     coast_id = body.get("coastId", "kl1")
     items = body.get("verifiedItems", [])
     
@@ -506,6 +506,13 @@ def get_coasts():
 @app.route("/api/shops", methods=["GET"])
 def get_shops():
     return jsonify({"items": []})
+
+@app.after_request
+def add_header(response):
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '-1'
+    return response
 
 @app.errorhandler(Exception)
 def handle_exception(e):

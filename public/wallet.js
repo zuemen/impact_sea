@@ -14,7 +14,7 @@ async function refreshWallet() {
   if (!walletUserId) return;
   try {
     const headers = getSessionToken() ? { "x-session-token": getSessionToken() } : {};
-    const res = await fetch(`/api/points/${walletUserId}/ledger?limit=15`, { headers });
+    const res = await fetch(`/api/points/${walletUserId}/ledger?limit=15&_t=${Date.now()}`, { headers });
     if (!res.ok) return;
     walletData = await res.json();
     renderWallet();
@@ -185,7 +185,7 @@ async function initESGDashboard() {
   section.style.display = "block";
 
   try {
-    const res = await fetch("/api/esg");
+    const res = await fetch(`/api/esg?_t=${Date.now()}`);
     if (!res.ok) return;
     const data = await res.json();
 
@@ -224,7 +224,7 @@ async function initESGDashboard() {
 
 window.simulateSponsor = async () => {
   try {
-    const res = await fetch("/api/esg", {
+    const res = await fetch(`/api/esg?_t=${Date.now()}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "sponsor", brand: "Henkel 漢高", amount: 10 }),
