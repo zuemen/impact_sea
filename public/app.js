@@ -209,9 +209,9 @@ function showCard() {
   const coast = state.coasts.find(c => c.id === state.currentCoastId) || state.coasts[0];
 
   const img = document.getElementById('c-img');
-  // 優先使用對應海域的精選海景照片
-  img.src = coast.img;
-  img.onerror = () => { img.src = 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&q=80&w=1200'; };
+  // 優先使用玩家投稿的真實照片，若無則使用海景預設照片
+  img.src = r.photoUrl || coast.img;
+  img.onerror = () => { img.src = coast.img; };
 
   document.getElementById('c-loc').innerText = r.locationName || r.name || coast.name;
   document.getElementById('c-loc-tag').innerText = coast.tag || "台灣海域";

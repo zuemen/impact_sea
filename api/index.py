@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 import os
 import json
 import time
@@ -7,7 +7,7 @@ import uuid
 import random
 from .db import get_db, init_db
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='../', static_url_path='/')
 
 # Ensure DB schema is initialized on startup
 try:
@@ -288,7 +288,8 @@ def draw_cards():
                   (inst_id, user_id, card["id"], card["name"], card["rarity"], card["emoji"], timestamp))
         new_records.append({
             "instanceId": inst_id, "cardId": card["id"], "name": card["name"],
-            "rarity": card["rarity"], "emoji": card["emoji"], "acquiredAt": timestamp
+            "rarity": card["rarity"], "emoji": card["emoji"], "acquiredAt": timestamp,
+            "power": card["power"], "desc": card["desc"]
         })
         
     conn.commit()
@@ -297,7 +298,9 @@ def draw_cards():
     return jsonify({
         "success": True,
         "drawnCards": new_records,
-        "transaction": tx_obj
+        "transaction": tx_obj,
+        "newBalance": balance - cost,
+        "cost": cost
     }), 200
 
 @app.route("/api/cards/<user_id>", methods=["GET"])
@@ -306,28 +309,38 @@ def get_cards(user_id):
     c = conn.cursor()
     c.execute("SELECT * FROM user_cards WHERE user_id = ?", (user_id,))
     cards = []
+    stats = {"common": 0, "rare": 0, "epic": 0, "legendary": 0}
     for row in c.fetchall():
+        card_id = row["card_id"]
+        rarity = row["rarity"]
+        if rarity in stats:
+            stats[rarity] += 1
+        pool_card = next((c for c in CARD_POOL if c["id"] == card_id), None)
+        if not pool_card:
+            pool_card = REWARD_ITEMS.get(card_id, {})
         cards.append({
             "instanceId": row["instance_id"],
-            "cardId": row["card_id"],
+            "cardId": card_id,
             "name": row["name"],
-            "rarity": row["rarity"],
+            "rarity": rarity,
             "emoji": row["emoji"],
-            "acquiredAt": row["acquired_at"]
+            "acquiredAt": row["acquired_at"],
+            "power": pool_card.get("power", 0),
+            "desc": pool_card.get("desc", "")
         })
     conn.close()
-    return jsonify({"cards": cards})
+    return jsonify({"cards": cards, "stats": stats, "total": len(cards)})
 
 # --- Token / ESG API ---
 REWARD_ITEMS = {
-    "r1": {"name": "海洋淨灘手套", "cost": 30, "stock": 50},
-    "r2": {"name": "珊瑚守護貼紙", "cost": 15, "stock": 100},
-    "r3": {"name": "海洋不鏽鋼吸管", "cost": 50, "stock": 30},
-    "r4": {"name": "友善店家折價券", "cost": 40, "stock": 80},
-    "r5": {"name": "海龜T-shirt", "cost": 150, "stock": 10},
-    "r6": {"name": "海洋繪本", "cost": 100, "stock": 20},
-    "r7": {"name": "減塑環保餐盒", "cost": 60, "stock": 40},
-    "r8": {"name": "Social Plastic® 認證NFT", "cost": 200, "stock": 999},
+    "r1": {"name": "海洋淨灘手套", "cost": 30, "stock": 50, "emoji": "🧤", "desc": "100%再生材料製成的環保手套", "power": 30},
+    "r2": {"name": "珊瑚守護貼紙", "cost": 15, "stock": 100, "emoji": "🏷️", "desc": "可貼於自備杯上的防水環保貼紙組", "power": 15},
+    "r3": {"name": "海洋不鏽鋼吸管", "cost": 50, "stock": 30, "emoji": "🥤", "desc": "附清潔刷與收納袋的醫療級吸管", "power": 50},
+    "r4": {"name": "友善店家折價券", "cost": 40, "stock": 80, "emoji": "🎫", "desc": "共生店家通用消費折抵 50 元", "power": 40},
+    "r5": {"name": "海龜T-shirt", "cost": 150, "stock": 10, "emoji": "👕", "desc": "Henkel ESG 聯名有機棉 T-shirt", "power": 150},
+    "r6": {"name": "海洋繪本", "cost": 100, "stock": 20, "emoji": "📘", "desc": "《這片海，離我多遠？》精裝繪本", "power": 100},
+    "r7": {"name": "減塑環保餐盒", "cost": 60, "stock": 40, "emoji": "🍱", "desc": "小麥纖維可分解便當盒", "power": 60},
+    "r8": {"name": "Social Plastic® 認證NFT", "cost": 200, "stock": 999, "emoji": "🔗", "desc": "你的環保貢獻永久上鏈數位認證", "power": 200},
 }
 
 @app.route("/api/token", methods=["GET"])
@@ -365,6 +378,12 @@ def redeem_token():
     tx_id = f"tx_{int(time.time())}"
     c.execute("INSERT INTO ledger (id, user_id, action_id, points, hash, prev_hash, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)",
               (tx_id, user_id, action_id, -item["cost"], tx_hash, prev_hash, timestamp))
+              
+    # Add redeemed item to user_cards so it appears in collection
+    inst_id = f"inst_{uuid.uuid4().hex[:8]}"
+    emoji = item.get("emoji", "🎁")
+    c.execute("INSERT INTO user_cards (instance_id, user_id, card_id, name, rarity, emoji, acquired_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+              (inst_id, user_id, item_id, item["name"], "legendary", emoji, timestamp))
               
     conn.commit()
     conn.close()
@@ -456,6 +475,69 @@ def post_esg():
         conn.close()
         return jsonify({"success": True, "message": f"已記錄 {weight}g Social Plastic® 貢獻。"}), 201
 
+# --- Photos & Submissions ---
+@app.route("/api/submissions", methods=["POST"])
+def submit_photo():
+    body = request.get_json() or {}
+    user_id = body.get("userId", "demo_user")
+    coast_id = body.get("coastId")
+    photo_url = body.get("photoUrl")
+    nickname = body.get("nickname")
+    location_name = body.get("locationName")
+    story = body.get("story")
+    
+    if not photo_url or not coast_id:
+        return jsonify({"error": "缺少照片或海域資訊"}), 400
+        
+    conn = get_db()
+    c = conn.cursor()
+    photo_id = f"photo_{int(time.time())}_{uuid.uuid4().hex[:4]}"
+    timestamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    
+    c.execute("INSERT INTO photos (id, user_id, coast_id, photo_url, nickname, location_name, story, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+              (photo_id, user_id, coast_id, photo_url, nickname, location_name, story, timestamp))
+              
+    # Give 15 points for submission
+    c.execute("SELECT hash FROM ledger ORDER BY rowid DESC LIMIT 1")
+    row = c.fetchone()
+    prev_hash = row["hash"] if row else "0"*64
+    action_id = "photo_submission"
+    tx_hash = compute_hash(prev_hash, action_id, 15, user_id, timestamp)
+    tx_id = f"tx_{int(time.time())}"
+    
+    c.execute("INSERT INTO ledger (id, user_id, action_id, points, hash, prev_hash, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)",
+              (tx_id, user_id, action_id, 15, tx_hash, prev_hash, timestamp))
+              
+    conn.commit()
+    conn.close()
+    return jsonify({"success": True}), 201
+
+@app.route("/api/photos/random", methods=["GET"])
+def get_random_photo():
+    coast_id = request.args.get("coastId")
+    conn = get_db()
+    c = conn.cursor()
+    
+    if coast_id:
+        c.execute("SELECT * FROM photos WHERE coast_id = ? ORDER BY RANDOM() LIMIT 1", (coast_id,))
+    else:
+        c.execute("SELECT * FROM photos ORDER BY RANDOM() LIMIT 1")
+        
+    row = c.fetchone()
+    conn.close()
+    
+    if not row:
+        return jsonify({"item": {}})
+        
+    return jsonify({
+        "item": {
+            "photoUrl": row["photo_url"],
+            "nickname": row["nickname"],
+            "locationName": row["location_name"],
+            "story": row["story"]
+        }
+    })
+
 # --- Missing Routes ---
 @app.route("/api/progress", methods=["GET"])
 def get_progress():
@@ -526,6 +608,16 @@ def add_header(response):
     response.headers['Pragma'] = 'no-cache'
     response.headers['Expires'] = '-1'
     return response
+
+@app.route('/')
+def serve_index():
+    return send_from_directory('../', 'index.html')
+
+@app.route('/<path:path>')
+def serve_static_files(path):
+    if os.path.exists(os.path.join('../', path)):
+        return send_from_directory('../', path)
+    return jsonify({"error": "Not found"}), 404
 
 @app.errorhandler(Exception)
 def handle_exception(e):

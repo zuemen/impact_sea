@@ -11,3 +11,8 @@ data/points-ledger.json
 *.log
 
 data/social-plastic.json
+
+# Python
+__pycache__/
+*.pyc
+db/*.db

@@ -9,6 +9,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;600;900&family=Montserrat:wght@100;400;900&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/MotionPathPlugin.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.css"/>
+    <script src="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.js.iife.js"></script>
 
     <style>
         :root {
@@ -263,6 +265,7 @@
     </div>
     <div onclick="window.toggleGallery(true)" style="padding: 20px 0; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; font-size: 0.9rem;"><i class="fa-solid fa-compass" style="margin-right: 15px;"></i> ARCHIVE</div>
     <div onclick="window.toggleESG(true)" style="padding: 20px 0; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; font-size: 0.9rem; color: var(--accent);"><i class="fa-solid fa-link" style="margin-right: 15px;"></i> SOCIAL PLASTIC®</div>
+    <div onclick="window.startOnboarding()" style="padding: 20px 0; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; font-size: 0.9rem; color: #fff;"><i class="fa-solid fa-route" style="margin-right: 15px;"></i> REPLAY TUTORIAL</div>
     <button onclick="window.logout()" style="color: #ff7675; background:none; border:none; margin-top: 18px; font-size: 0.78rem; letter-spacing: 2px; cursor: pointer; text-align: left; padding: 20px 0;">LOGOUT</button>
     <button onclick="window.resetData()" style="color: #ff7675; background:none; border:none; margin-top: auto; padding-bottom: 30px; font-size: 0.8rem; letter-spacing: 2px; cursor: pointer;">RESET ALL DATA</button>
 </div>
@@ -558,7 +561,47 @@
             startIdleCarousel();
             if (hasDrawnToday()) lockDraw();
             else unlockDraw();
+
+            if (!localStorage.getItem('muse_onboarding_done_v27')) {
+                setTimeout(window.startOnboarding, 500);
+            }
         }});
+    };
+
+    window.startOnboarding = () => {
+        window.toggleSidebar(false);
+        const driver = window.driver.js.driver;
+        const driverObj = driver({
+            showProgress: true,
+            animate: true,
+            allowClose: true,
+            doneBtnText: '開始守護',
+            nextBtnText: '下一步',
+            prevBtnText: '上一步',
+            steps: [
+                {
+                    element: '#stamp-row',
+                    popover: { title: '守護印章', description: '這裡是你的守護印章，每天完成行動即可獲得，集滿可解鎖新海域！', side: "bottom", align: 'start' }
+                },
+                {
+                    element: '#draw-btn',
+                    popover: { title: '開始儀式', description: '勾選完成自備後，點擊這裡開始每日的守護儀式。', side: "top", align: 'center' }
+                },
+                {
+                    element: '.fa-bars-staggered',
+                    popover: { title: '個人面板', description: '點擊這裡打開側邊欄，查看你的帳號與 Social Plastic® 貢獻。', side: "bottom", align: 'end' }
+                },
+                {
+                    element: '.archive-trigger',
+                    popover: { title: '探索圖鑑', description: '點擊這裡可以查看你已經解鎖的圖鑑與合作店家。', side: "left", align: 'center' }
+                }
+            ],
+            onDestroyStarted: () => {
+                localStorage.setItem('muse_onboarding_done_v27', 'true');
+                driverObj.destroy();
+            }
+        });
+        driverObj.drive();
     };
 
     // --- 敘事節奏動畫 ---

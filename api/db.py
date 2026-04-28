@@ -1,7 +1,7 @@
 import sqlite3
 import os
 
-DB_PATH = "/tmp/impact.db"
+DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "db", "impact.db")
 
 def get_db():
     conn = sqlite3.connect(DB_PATH, isolation_level=None)
@@ -58,6 +58,16 @@ def init_db():
         user_id TEXT,
         hash TEXT,
         prev_hash TEXT,
+        timestamp TEXT
+    );
+    CREATE TABLE IF NOT EXISTS photos (
+        id TEXT PRIMARY KEY,
+        user_id TEXT,
+        coast_id TEXT,
+        photo_url TEXT,
+        nickname TEXT,
+        location_name TEXT,
+        story TEXT,
         timestamp TEXT
     );
     """)
