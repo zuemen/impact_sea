@@ -1,7 +1,7 @@
 import sqlite3
 import os
 
-DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "db", "impact.db")
+DB_PATH = os.environ.get("DATABASE_URL", "/tmp/impact.db")
 
 def get_db():
     conn = sqlite3.connect(DB_PATH, isolation_level=None)

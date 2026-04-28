@@ -10,6 +10,8 @@
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/MotionPathPlugin.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.js.iife.js"></script>
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
@@ -22,7 +24,7 @@
 
   <!-- 1. 入口儀式 -->
   <div id="mirror-gate">
-      <div class="mirror-portal" onclick="window.enterApp()"></div>
+      <div class="mirror-portal" id="portal-btn"></div>
       <p class="portal-text">TOUCH TO AWAKEN</p>
   </div>
 
@@ -109,6 +111,7 @@
         <span style="font-size: 0.7rem; color: var(--sea-teal); letter-spacing: 2px; text-transform: uppercase;">Guardian: </span>
         <span id="display-name" style="font-size: 0.7rem; color: var(--sea-sand); letter-spacing: 1px;"></span>
         <button onclick="window.logout()" style="background: none; border: 1px solid var(--glass-border); color: var(--sea-slate); font-size: 0.5rem; padding: 2px 8px; margin-left: 10px; cursor: pointer; border-radius: 20px; text-transform: uppercase;">Logout</button>
+        <button onclick="window.startOnboarding && window.startOnboarding()" style="background: none; border: 1px solid rgba(0,242,255,0.3); color: var(--sea-teal); font-size: 0.5rem; padding: 2px 8px; margin-left: 6px; cursor: pointer; border-radius: 20px; text-transform: uppercase;" title="重播教學">? Tutorial</button>
       </div>
       <p>海洋，從你的選擇開始</p>
       <h1>這片海，<br>離我多遠？</h1>
@@ -371,6 +374,106 @@
   <script>
     // 初始化 auth 表單（切換 tab 顯示）
     if (typeof renderAuthForm === 'function') renderAuthForm();
+
+    // ─── Mirror Portal：安全觸發入口 ───────────────────────────
+    document.getElementById('portal-btn').addEventListener('click', function() {
+      if (typeof window.enterApp === 'function') {
+        window.enterApp();
+      } else {
+        // app.js 尚未就緒，稍後重試
+        var attempts = 0;
+        var retry = setInterval(function() {
+          attempts++;
+          if (typeof window.enterApp === 'function') {
+            clearInterval(retry);
+            window.enterApp();
+          } else if (attempts > 20) {
+            clearInterval(retry);
+            console.error('app.js failed to load enterApp');
+          }
+        }, 100);
+      }
+    });
+
+    // ─── User Flow Onboarding（Driver.js）─────────────────────
+    window.startOnboarding = function() {
+      if (!window.driver || !window.driver.js) return;
+      var driver = window.driver.js.driver;
+      var driverObj = driver({
+        showProgress: true,
+        animate: true,
+        allowClose: true,
+        doneBtnText: '開始守護 🌊',
+        nextBtnText: '下一步 →',
+        prevBtnText: '← 上一步',
+        steps: [
+          {
+            element: '#task-cup',
+            popover: {
+              title: '🥤 守護行動',
+              description: '從這裡選擇今日完成的環保行動，例如自備杯、自備袋或拒絕吸管。',
+              side: 'right', align: 'start'
+            }
+          },
+          {
+            element: '#actBtn',
+            popover: {
+              title: '🔥 啟動儀式',
+              description: '選好行動後，點擊這裡啟動每日守護儀式，系統會隨機連結一片台灣海域並記錄你的影響力。',
+              side: 'top', align: 'center'
+            }
+          },
+          {
+            element: '#stampRow',
+            popover: {
+              title: '🏅 連續守護印章',
+              description: '每天完成儀式就會累積印章。連續守護天數越多，你的影響力越深遠！',
+              side: 'bottom', align: 'start'
+            }
+          },
+          {
+            element: '#wallet-section',
+            popover: {
+              title: '🔗 區塊鏈積點',
+              description: '每次守護行動都會獲得積點，以加密雜湊上鏈，不可篡改。積點可用來抽卡或兌換永續商品。',
+              side: 'top', align: 'center'
+            }
+          },
+          {
+            element: '#draw-btn-1',
+            popover: {
+              title: '✨ 召喚守護靈',
+              description: '累積 10 積點後可以召喚守護靈卡片！有機率獲得稀有、史詩甚至傳說等級的海洋守護靈。',
+              side: 'top', align: 'center'
+            }
+          }
+        ],
+        onDestroyStarted: function() {
+          localStorage.setItem('symbiosis_onboarding_done_v1', 'true');
+          driverObj.destroy();
+        }
+      });
+      driverObj.drive();
+    };
+
+    // 初次進入自動觸發教學（onAuthSuccess 後呼叫）
+    var _origOnAuthSuccess = window.onAuthSuccess;
+    // Hook into initApp to show onboarding
+    var _origInitApp = null;
+    var _hookedInitApp = false;
+    function hookInitApp() {
+      if (_hookedInitApp || !window.initApp) return;
+      _hookedInitApp = true;
+      var orig = window.initApp;
+      window.initApp = async function() {
+        await orig.apply(this, arguments);
+        if (!localStorage.getItem('symbiosis_onboarding_done_v1')) {
+          setTimeout(window.startOnboarding, 800);
+        }
+      };
+    }
+    // Try to hook once scripts are done
+    setTimeout(hookInitApp, 200);
   </script>
 </body>
 </html>
