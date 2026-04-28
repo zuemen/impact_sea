@@ -85,15 +85,10 @@ def login():
         c.execute("SELECT id FROM users WHERE email = ?", (email,))
         if c.fetchone():
             conn.close()
-            return jsonify({"error": "密碼錯誤"}), 401
+            return jsonify({"error": "密碼錯誤，請重新輸入"}), 401
         else:
-            # Self-heal: auto-register if user doesn't exist (e.g. DB wiped)
-            user_id = "u_" + str(int(time.time()))
-            display_name = email.split("@")[0]
-            created_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-            c.execute("INSERT INTO users (id, email, password, display_name, created_at) VALUES (?, ?, ?, ?, ?)",
-                      (user_id, email, password, display_name, created_at))
-            user = {"id": user_id, "display_name": display_name}
+            conn.close()
+            return jsonify({"error": "此信箱尚未註冊，請先建立帳號"}), 401
         
     token = f"{user['id']}::{uuid.uuid4()}"
     created_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
@@ -121,14 +116,10 @@ def verify():
     user = c.fetchone()
     
     if not user:
-        # Self-heal session
-        display_name = "守護者"
-        c.execute("INSERT INTO users (id, email, password, display_name, created_at) VALUES (?, ?, ?, ?, ?)",
-                  (user_id, f"{user_id}@demo.com", "demo", display_name, time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())))
-        conn.commit()
-    else:
-        display_name = user["display_name"]
+        conn.close()
+        return jsonify({"valid": False, "error": "Session 已失效，請重新登入"}), 401
         
+    display_name = user["display_name"]
     conn.close()
     
     return jsonify({
