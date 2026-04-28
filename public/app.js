@@ -77,6 +77,12 @@ async function updateUserProgress(userId) {
       el.stampRow.appendChild(div);
     }
     el.streakText.textContent = progress.streakDays;
+
+    // 空白狀態：如果還沒有任何守護印章，顯示引導卡
+    const guide = document.getElementById('empty-state-guide');
+    if (guide) {
+      guide.style.display = progress.totalActions === 0 ? 'block' : 'none';
+    }
   } catch (err) { console.error(err); }
 }
 
@@ -111,6 +117,10 @@ window.startRitual = async function() {
     el.actionStatus.innerText = "請至少選擇一項行動。";
     return;
   }
+
+  // 隐藏空白狀態引導
+  const guide = document.getElementById('empty-state-guide');
+  if (guide) guide.style.display = 'none';
 
   const randomCoast = state.coasts[Math.floor(Math.random() * state.coasts.length)];
   state.currentCoastId = randomCoast.id;
@@ -148,13 +158,7 @@ window.startRitual = async function() {
     state.reward = await DB.getRandomReward(state.currentCoastId);
     const coast = randomCoast;
 
-    // 更新路徑顯示
-    const routeContainer = document.getElementById('route-container');
-    document.getElementById('routeText').textContent = coast.cityRoute;
-    document.getElementById('path-fill').style.width = '0%';
-    routeContainer.style.display = 'block';
-
-    // 3. 啟動 GSAP 動畫
+    // 3. 啟動 GSAP 動畫層
     const ov = document.getElementById('anim-overlay');
     ov.style.display = 'flex';
     ov.style.opacity = 1;
@@ -172,7 +176,8 @@ window.startRitual = async function() {
     .add(() => {
       gsap.to("#line-1", { opacity: 0, duration: 1 });
       gsap.to("#line-2", { opacity: 1, y: -20, delay: 0.8, duration: 1.5 });
-      gsap.to(document.getElementById('path-fill'), { width: (Math.random() * 50 + 40) + '%', duration: 4, ease: "power1.inOut" });
+      // 動畫結束後顯示城市路徑動畫
+      setTimeout(() => animateCityRoute(coast), 1200);
     })
     .to(photon, { scale: 150, opacity: 0, duration: 2 })
     .add(() => {
@@ -192,6 +197,49 @@ window.startRitual = async function() {
     document.getElementById('anim-overlay').style.display = 'none';
   }
 };
+
+// ── 城市路徑動畫：逐步顯示每個節點 ──────────────────────────────
+function animateCityRoute(coast) {
+  const container = document.getElementById('city-route-anim');
+  const nodesList = document.getElementById('route-nodes-list');
+  if (!container || !nodesList) return;
+
+  // 將 cityRoute 字串分割為每個節點
+  const rawRoute = coast.cityRoute || '';
+  const segments = rawRoute.split(' → ').map(s => s.trim()).filter(Boolean);
+  if (segments.length === 0) return;
+
+  // 加入第一個起點：「你的行動」
+  const nodes = ['你的守護行動 🌱', ...segments];
+
+  // 清空并顯示套件
+  nodesList.innerHTML = '';
+  container.style.display = 'block';
+
+  nodes.forEach((label, i) => {
+    const isFinal = i === nodes.length - 1;
+    const nodeEl = document.createElement('div');
+    nodeEl.className = 'route-node';
+
+    const subLabels = ['START', '', '', '', '🌊 DESTINATION'];
+    const sub = isFinal ? '🌊 最終目標海域' : (i === 0 ? 'START' : `流入 ${i}`);
+
+    nodeEl.innerHTML = `
+      <div class="route-node-left">
+        <div class="route-dot ${isFinal ? 'final' : ''}"></div>
+        ${!isFinal ? '<div class="route-line"></div>' : ''}
+      </div>
+      <div class="route-node-text">
+        <div class="route-node-label">${label}</div>
+        <div class="route-node-sub">${sub}</div>
+      </div>
+    `;
+    nodesList.appendChild(nodeEl);
+
+    // 逐個延遲出現
+    setTimeout(() => nodeEl.classList.add('visible'), i * 600);
+  });
+}
 
 window.revealReward = () => {
   const ov = document.getElementById('anim-overlay');

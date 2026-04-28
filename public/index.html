@@ -71,6 +71,11 @@
       <div id="narrative-box">
           <div class="narrative-line" id="line-1">正在感知你的選擇...</div>
           <div class="narrative-line" id="line-2">流動、匯聚，成為波浪...</div>
+          <!-- 城市路徑動畫 -->
+          <div id="city-route-anim">
+            <span class="route-title">Your Impact Path / 你的影響力路徑</span>
+            <div class="route-nodes" id="route-nodes-list"></div>
+          </div>
           <div class="narrative-line" id="line-3" style="color:var(--sea-teal); font-weight:400;"></div>
           <button id="btn-reveal-final" onclick="window.revealReward()" style="display:none; background:none; border:1px solid var(--sea-teal); color:var(--sea-teal); padding:15px 40px; margin: 40px auto; cursor:pointer; letter-spacing:5px; text-transform:uppercase; font-size:0.7rem; border-radius:50px;">揭開海洋的回應</button>
       </div>
@@ -125,6 +130,28 @@
       <section class="altar-panel">
         <span class="ritual-title">Ritual Action / 守護行動</span>
         
+        <!-- 空白狀態引導（首次登入時顯示） -->
+        <div id="empty-state-guide">
+          <span class="esg-icon">🌊</span>
+          <h3>歡迎成為守護者</h3>
+          <p>你的每一個日常選擇，都在悄悄影響這片海。<br>完成你的第一次守護行動，開始你的旅程。</p>
+          <div class="step-list">
+            <div class="step-item">
+              <span class="step-num">1</span>
+              <span>勾選今日完成的環保行動（自備杯、拒絕吸管…）</span>
+            </div>
+            <div class="step-item">
+              <span class="step-num">2</span>
+              <span>點擊「啟動儀式」，系統隨機連結一片台灣海域</span>
+            </div>
+            <div class="step-item">
+              <span class="step-num">3</span>
+              <span>獲得守護積點 ＆ 召喚海洋守護靈卡片！</span>
+            </div>
+          </div>
+          <span class="arrow-hint">↓ 從下方開始</span>
+        </div>
+
         <div class="task-icons">
           <label class="icon-option" id="task-cup">
             <input type="checkbox" value="cup" hidden onchange="this.parentElement.classList.toggle('active')">
