@@ -32,7 +32,7 @@ def register():
     conn = get_db()
     c = conn.cursor()
     
-    c.execute("SELECT id FROM users WHERE email = ?", (email,))
+    c.execute("SELECT id FROM users WHERE email = %s", (email,))
     if c.fetchone():
         return jsonify({"error": "該信箱已被註冊"}), 400
     
@@ -40,22 +40,22 @@ def register():
     created_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     display_name = display_name or email.split("@")[0]
     
-    c.execute("INSERT INTO users (id, email, password, display_name, created_at) VALUES (?, ?, ?, ?, ?)",
+    c.execute("INSERT INTO users (id, email, password, display_name, created_at) VALUES (%s, %s, %s, %s, %s)",
               (user_id, email, password, display_name, created_at))
     
     # 註冊送積點
-    c.execute("SELECT hash FROM ledger ORDER BY rowid DESC LIMIT 1")
+    c.execute("SELECT hash FROM ledger ORDER BY auto_id DESC LIMIT 1")
     row = c.fetchone()
     prev_hash = row["hash"] if row else "0"*64
     timestamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     tx_hash = compute_hash(prev_hash, "register_bonus", 30, user_id, timestamp)
     
     tx_id = f"tx_{int(time.time())}"
-    c.execute("INSERT INTO ledger (id, user_id, action_id, points, hash, prev_hash, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)",
+    c.execute("INSERT INTO ledger (id, user_id, action_id, points, hash, prev_hash, timestamp) VALUES (%s, %s, %s, %s, %s, %s, %s)",
               (tx_id, user_id, "register_bonus", 30, tx_hash, prev_hash, timestamp))
               
     token = f"{user_id}::{uuid.uuid4()}"
-    c.execute("INSERT INTO sessions (token, user_id, created_at) VALUES (?, ?, ?)",
+    c.execute("INSERT INTO sessions (token, user_id, created_at) VALUES (%s, %s, %s)",
               (token, user_id, created_at))
     
     conn.commit()
@@ -78,11 +78,11 @@ def login():
         
     conn = get_db()
     c = conn.cursor()
-    c.execute("SELECT id, display_name FROM users WHERE email = ? AND password = ?", (email, password))
+    c.execute("SELECT id, display_name FROM users WHERE email = %s AND password = %s", (email, password))
     user = c.fetchone()
     
     if not user:
-        c.execute("SELECT id FROM users WHERE email = ?", (email,))
+        c.execute("SELECT id FROM users WHERE email = %s", (email,))
         if c.fetchone():
             conn.close()
             return jsonify({"error": "密碼錯誤，請重新輸入"}), 401
@@ -92,7 +92,7 @@ def login():
         
     token = f"{user['id']}::{uuid.uuid4()}"
     created_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-    c.execute("INSERT INTO sessions (token, user_id, created_at) VALUES (?, ?, ?)",
+    c.execute("INSERT INTO sessions (token, user_id, created_at) VALUES (%s, %s, %s)",
               (token, user["id"], created_at))
     conn.commit()
     conn.close()
@@ -112,7 +112,7 @@ def verify():
     user_id = token.split("::")[0]
     conn = get_db()
     c = conn.cursor()
-    c.execute("SELECT display_name FROM users WHERE id = ?", (user_id,))
+    c.execute("SELECT display_name FROM users WHERE id = %s", (user_id,))
     user = c.fetchone()
     
     if not user:
@@ -148,16 +148,16 @@ def save_action():
     conn = get_db()
     c = conn.cursor()
     
-    c.execute("INSERT INTO actions (id, user_id, coast_id, verified_items, reduction_gram, timestamp) VALUES (?, ?, ?, ?, ?, ?)",
+    c.execute("INSERT INTO actions (id, user_id, coast_id, verified_items, reduction_gram, timestamp) VALUES (%s, %s, %s, %s, %s, %s)",
               (action_id, user_id, coast_id, json.dumps(items), round(reduction, 2), timestamp))
               
-    c.execute("SELECT hash FROM ledger ORDER BY rowid DESC LIMIT 1")
+    c.execute("SELECT hash FROM ledger ORDER BY auto_id DESC LIMIT 1")
     row = c.fetchone()
     prev_hash = row["hash"] if row else "0"*64
     tx_hash = compute_hash(prev_hash, action_id, points_earned, user_id, timestamp)
     
     tx_id = f"tx_{int(time.time())}"
-    c.execute("INSERT INTO ledger (id, user_id, action_id, points, hash, prev_hash, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)",
+    c.execute("INSERT INTO ledger (id, user_id, action_id, points, hash, prev_hash, timestamp) VALUES (%s, %s, %s, %s, %s, %s, %s)",
               (tx_id, user_id, action_id, points_earned, tx_hash, prev_hash, timestamp))
               
     conn.commit()
@@ -177,11 +177,11 @@ def get_ledger(user_id):
     conn = get_db()
     c = conn.cursor()
     
-    c.execute("SELECT SUM(points) as balance FROM ledger WHERE user_id = ?", (user_id,))
+    c.execute("SELECT SUM(points) as balance FROM ledger WHERE user_id = %s", (user_id,))
     row = c.fetchone()
     balance = row["balance"] if row and row["balance"] else 0
     
-    c.execute("SELECT * FROM ledger WHERE user_id = ? ORDER BY rowid DESC LIMIT 20", (user_id,))
+    c.execute("SELECT * FROM ledger WHERE user_id = %s ORDER BY auto_id DESC LIMIT 20", (user_id,))
     txs = [dict(row) for row in c.fetchall()]
     
     # Format keys to camelCase for frontend
@@ -239,7 +239,7 @@ def draw_cards():
     conn = get_db()
     c = conn.cursor()
     
-    c.execute("SELECT SUM(points) as balance FROM ledger WHERE user_id = ?", (user_id,))
+    c.execute("SELECT SUM(points) as balance FROM ledger WHERE user_id = %s", (user_id,))
     row = c.fetchone()
     balance = row["balance"] if row and row["balance"] else 0
     
@@ -249,7 +249,7 @@ def draw_cards():
         return jsonify({"error": "積點不足"}), 400
         
     timestamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-    c.execute("SELECT hash FROM ledger ORDER BY rowid DESC LIMIT 1")
+    c.execute("SELECT hash FROM ledger ORDER BY auto_id DESC LIMIT 1")
     row = c.fetchone()
     prev_hash = row["hash"] if row else "0"*64
     
@@ -257,7 +257,7 @@ def draw_cards():
     tx_hash = compute_hash(prev_hash, action_type, -cost, user_id, timestamp)
     
     tx_id = f"tx_{int(time.time())}"
-    c.execute("INSERT INTO ledger (id, user_id, action_id, points, hash, prev_hash, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)",
+    c.execute("INSERT INTO ledger (id, user_id, action_id, points, hash, prev_hash, timestamp) VALUES (%s, %s, %s, %s, %s, %s, %s)",
               (tx_id, user_id, action_type, -cost, tx_hash, prev_hash, timestamp))
               
     tx_obj = {
@@ -275,7 +275,7 @@ def draw_cards():
     
     for card in drawn_cards:
         inst_id = f"inst_{uuid.uuid4().hex[:8]}"
-        c.execute("INSERT INTO user_cards (instance_id, user_id, card_id, name, rarity, emoji, acquired_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        c.execute("INSERT INTO user_cards (instance_id, user_id, card_id, name, rarity, emoji, acquired_at) VALUES (%s, %s, %s, %s, %s, %s, %s)",
                   (inst_id, user_id, card["id"], card["name"], card["rarity"], card["emoji"], timestamp))
         new_records.append({
             "instanceId": inst_id, "cardId": card["id"], "name": card["name"],
@@ -298,7 +298,7 @@ def draw_cards():
 def get_cards(user_id):
     conn = get_db()
     c = conn.cursor()
-    c.execute("SELECT * FROM user_cards WHERE user_id = ?", (user_id,))
+    c.execute("SELECT * FROM user_cards WHERE user_id = %s", (user_id,))
     cards = []
     stats = {"common": 0, "rare": 0, "epic": 0, "legendary": 0}
     for row in c.fetchall():
@@ -351,7 +351,7 @@ def redeem_token():
     
     conn = get_db()
     c = conn.cursor()
-    c.execute("SELECT SUM(points) as balance FROM ledger WHERE user_id = ?", (user_id,))
+    c.execute("SELECT SUM(points) as balance FROM ledger WHERE user_id = %s", (user_id,))
     row = c.fetchone()
     balance = row["balance"] if row and row["balance"] else 0
     
@@ -360,20 +360,20 @@ def redeem_token():
         return jsonify({"error": "積點不足"}), 400
         
     timestamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-    c.execute("SELECT hash FROM ledger ORDER BY rowid DESC LIMIT 1")
+    c.execute("SELECT hash FROM ledger ORDER BY auto_id DESC LIMIT 1")
     row = c.fetchone()
     prev_hash = row["hash"] if row else "0"*64
     action_id = f"redeem_{item['name']}"
     tx_hash = compute_hash(prev_hash, action_id, -item["cost"], user_id, timestamp)
     
     tx_id = f"tx_{int(time.time())}"
-    c.execute("INSERT INTO ledger (id, user_id, action_id, points, hash, prev_hash, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)",
+    c.execute("INSERT INTO ledger (id, user_id, action_id, points, hash, prev_hash, timestamp) VALUES (%s, %s, %s, %s, %s, %s, %s)",
               (tx_id, user_id, action_id, -item["cost"], tx_hash, prev_hash, timestamp))
               
     # Add redeemed item to user_cards so it appears in collection
     inst_id = f"inst_{uuid.uuid4().hex[:8]}"
     emoji = item.get("emoji", "🎁")
-    c.execute("INSERT INTO user_cards (instance_id, user_id, card_id, name, rarity, emoji, acquired_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+    c.execute("INSERT INTO user_cards (instance_id, user_id, card_id, name, rarity, emoji, acquired_at) VALUES (%s, %s, %s, %s, %s, %s, %s)",
               (inst_id, user_id, item_id, item["name"], "legendary", emoji, timestamp))
               
     conn.commit()
@@ -401,7 +401,7 @@ def get_esg():
     spon_row = c.fetchone()
     total_sponsored = spon_row["sponsored"] if spon_row and spon_row["sponsored"] else 0
     
-    c.execute("SELECT * FROM social_plastic ORDER BY rowid DESC LIMIT 20")
+    c.execute("SELECT * FROM social_plastic ORDER BY auto_id DESC LIMIT 20")
     txs = []
     for row in c.fetchall():
         txs.append({
@@ -424,7 +424,7 @@ def post_esg():
     
     conn = get_db()
     c = conn.cursor()
-    c.execute("SELECT hash FROM social_plastic ORDER BY rowid DESC LIMIT 1")
+    c.execute("SELECT hash FROM social_plastic ORDER BY auto_id DESC LIMIT 1")
     row = c.fetchone()
     prev_hash = row["hash"] if row else "0"*40
     
@@ -449,7 +449,7 @@ def post_esg():
         tx_hash = compute_hash(prev_hash, "sponsor", actual, "system", timestamp)[:40]
         tx_id = f"sp_{int(time.time())}_sponsor"
         
-        c.execute("INSERT INTO social_plastic (id, type, weight_gram, brand, user_id, hash, prev_hash, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        c.execute("INSERT INTO social_plastic (id, type, weight_gram, brand, user_id, hash, prev_hash, timestamp) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
                   (tx_id, "sponsor", actual, brand, "system", tx_hash, prev_hash, timestamp))
         conn.commit()
         conn.close()
@@ -460,7 +460,7 @@ def post_esg():
         tx_hash = compute_hash(prev_hash, "collect", weight, user_id, timestamp)[:40]
         tx_id = f"sp_{int(time.time())}_collect"
         
-        c.execute("INSERT INTO social_plastic (id, type, weight_gram, brand, user_id, hash, prev_hash, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        c.execute("INSERT INTO social_plastic (id, type, weight_gram, brand, user_id, hash, prev_hash, timestamp) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
                   (tx_id, "collect", weight, "", user_id, tx_hash, prev_hash, timestamp))
         conn.commit()
         conn.close()
@@ -485,18 +485,18 @@ def submit_photo():
     photo_id = f"photo_{int(time.time())}_{uuid.uuid4().hex[:4]}"
     timestamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     
-    c.execute("INSERT INTO photos (id, user_id, coast_id, photo_url, nickname, location_name, story, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+    c.execute("INSERT INTO photos (id, user_id, coast_id, photo_url, nickname, location_name, story, timestamp) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
               (photo_id, user_id, coast_id, photo_url, nickname, location_name, story, timestamp))
               
     # Give 15 points for submission
-    c.execute("SELECT hash FROM ledger ORDER BY rowid DESC LIMIT 1")
+    c.execute("SELECT hash FROM ledger ORDER BY auto_id DESC LIMIT 1")
     row = c.fetchone()
     prev_hash = row["hash"] if row else "0"*64
     action_id = "photo_submission"
     tx_hash = compute_hash(prev_hash, action_id, 15, user_id, timestamp)
     tx_id = f"tx_{int(time.time())}"
     
-    c.execute("INSERT INTO ledger (id, user_id, action_id, points, hash, prev_hash, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)",
+    c.execute("INSERT INTO ledger (id, user_id, action_id, points, hash, prev_hash, timestamp) VALUES (%s, %s, %s, %s, %s, %s, %s)",
               (tx_id, user_id, action_id, 15, tx_hash, prev_hash, timestamp))
               
     conn.commit()
@@ -510,7 +510,7 @@ def get_random_photo():
     c = conn.cursor()
     
     if coast_id:
-        c.execute("SELECT * FROM photos WHERE coast_id = ? ORDER BY RANDOM() LIMIT 1", (coast_id,))
+        c.execute("SELECT * FROM photos WHERE coast_id = %s ORDER BY RANDOM() LIMIT 1", (coast_id,))
     else:
         c.execute("SELECT * FROM photos ORDER BY RANDOM() LIMIT 1")
         
@@ -537,7 +537,7 @@ def get_progress():
     
     conn = get_db()
     c = conn.cursor()
-    c.execute("SELECT timestamp FROM actions WHERE user_id = ?", (user_id,))
+    c.execute("SELECT timestamp FROM actions WHERE user_id = %s", (user_id,))
     actions = [row["timestamp"][:10] for row in c.fetchall()]
     conn.close()
     
@@ -565,7 +565,7 @@ def get_metrics():
     
     conn = get_db()
     c = conn.cursor()
-    c.execute("SELECT user_id, reduction_gram, coast_id FROM actions WHERE timestamp LIKE ?", (f"{month}%",))
+    c.execute("SELECT user_id, reduction_gram, coast_id FROM actions WHERE timestamp LIKE %s", (f"{month}%",))
     actions = [dict(row) for row in c.fetchall()]
     conn.close()
     
