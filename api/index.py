@@ -15,6 +15,24 @@ try:
 except Exception as e:
     print("DB Init Error:", e)
 
+def update_visitor_count():
+    try:
+        data_dir = os.path.join(os.path.dirname(__file__), "../data")
+        stats_file = os.path.join(data_dir, "stats.json")
+        if not os.path.exists(data_dir):
+            os.makedirs(data_dir, exist_ok=True)
+        
+        stats = {"totalVisitors": 0}
+        if os.path.exists(stats_file):
+            with open(stats_file, "r", encoding="utf-8") as f:
+                stats = json.load(f)
+        
+        stats["totalVisitors"] = stats.get("totalVisitors", 0) + 1
+        with open(stats_file, "w", encoding="utf-8") as f:
+            json.dump(stats, f, indent=2)
+    except Exception as e:
+        print("Error updating visitor count:", e)
+
 def compute_hash(prev_hash, action, value, user_id, timestamp):
     data_str = f"{prev_hash}|{action}|{value}|{user_id}|{timestamp}"
     return hashlib.sha256(data_str.encode("utf-8")).hexdigest()
@@ -593,6 +611,19 @@ def get_coasts():
 def get_shops():
     return jsonify({"items": []})
 
+@app.route("/api/visitors", methods=["GET"])
+def get_visitors():
+    try:
+        data_dir = os.path.join(os.path.dirname(__file__), "../data")
+        stats_file = os.path.join(data_dir, "stats.json")
+        stats = {"totalVisitors": 0}
+        if os.path.exists(stats_file):
+            with open(stats_file, "r", encoding="utf-8") as f:
+                stats = json.load(f)
+        return jsonify({"totalVisitors": stats.get("totalVisitors", 0)})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @app.after_request
 def add_header(response):
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
@@ -602,6 +633,7 @@ def add_header(response):
 
 @app.route('/')
 def serve_index():
+    update_visitor_count()
     return send_from_directory('../', 'index.html')
 
 @app.route('/<path:path>')
