@@ -114,7 +114,18 @@ function resolvePublicPath(urlPath) {
 
 function serveStatic(req, res, urlObj) {
   let pathname = urlObj.pathname;
-  if (pathname === "/") pathname = "/index.html";
+  if (pathname === "/") {
+    pathname = "/index.html";
+    // Increment visitor count
+    try {
+      let stats = readJson("stats.json");
+      if (Array.isArray(stats)) stats = {}; // Handle default empty array from readJson
+      stats.totalVisitors = (stats.totalVisitors || 0) + 1;
+      writeJson("stats.json", stats);
+    } catch (e) {
+      console.error("Error updating visitor count:", e);
+    }
+  }
   const filePath = resolvePublicPath(pathname);
   if (!filePath || !fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
     sendText(res, 404, "Not Found");
@@ -576,6 +587,11 @@ function handleApi(req, res, urlObj) {
     return sendJson(res, 200, { cards: CARD_POOL, drawCost: DRAW_COST, rates: RARITY_RATES });
   }
 
+  if (pathname === "/api/visitors" && method === "GET") {
+    const stats = readJson("stats.json");
+    return sendJson(res, 200, { totalVisitors: stats.totalVisitors || 0 });
+  }
+
   sendText(res, 404, "API route not found");
 }
 
@@ -589,6 +605,7 @@ ensureDataFile("users.json", []);
 ensureDataFile("sessions.json", []);
 ensureDataFile("points-ledger.json", []);
 ensureDataFile("user-cards.json", []);
+ensureDataFile("stats.json", { totalVisitors: 0 });
 
 const server = http.createServer((req, res) => {
   const urlObj = new URL(req.url, `http://${req.headers.host}`);

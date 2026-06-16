@@ -235,6 +235,7 @@
 <div id="app-shell">
     <div style="padding: 60px 30px 20px; display: flex; justify-content: space-between; align-items: center;">
         <div>
+            <div id="visitor-counter" style="font-size: 0.65rem; color: var(--accent); letter-spacing: 2px; margin-bottom: 8px; font-weight: 900; text-shadow: 0 0 10px var(--accent);">VISITORS: 0</div>
             <span style="font-size: 0.55rem; letter-spacing: 3px; opacity: 0.4; font-weight: 900;">IMPACT STAMPS</span>
             <div style="display: flex; gap: 10px; margin-top: 10px;" id="stamp-row">
                 <div class="stamp-slot">I</div><div class="stamp-slot">II</div><div class="stamp-slot">III</div><div class="stamp-slot">IV</div><div class="stamp-slot">V</div>
@@ -346,6 +347,26 @@
     let actionsByDate = JSON.parse(localStorage.getItem(KEY_ACTIONS_BY_DATE) || '{}');
     let current = null;
     let idleTimer = null;
+    let visitorTimer = null;
+
+    async function fetchVisitorCount() {
+        try {
+            const res = await fetch('/api/visitors');
+            const data = await res.json();
+            const counterEl = document.getElementById('visitor-counter');
+            if (counterEl && data.totalVisitors !== undefined) {
+                counterEl.innerText = `VISITORS: ${data.totalVisitors.toLocaleString()}`;
+            }
+        } catch (e) {
+            console.error('Failed to fetch visitor count', e);
+        }
+    }
+
+    function startVisitorPolling() {
+        fetchVisitorCount();
+        clearInterval(visitorTimer);
+        visitorTimer = setInterval(fetchVisitorCount, 5000); // Poll every 5 seconds
+    }
 
     function todayKey() {
         return new Date().toLocaleDateString('sv-SE');
@@ -426,6 +447,7 @@
             gsap.to("#app-shell", { opacity: 1, duration: 1 });
             updateStampUI();
             startIdleCarousel();
+            startVisitorPolling();
             if (hasDrawnToday()) lockDraw();
             else unlockDraw();
         }});
