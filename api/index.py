@@ -17,19 +17,11 @@ except Exception as e:
 
 def update_visitor_count():
     try:
-        data_dir = os.path.join(os.path.dirname(__file__), "../data")
-        stats_file = os.path.join(data_dir, "stats.json")
-        if not os.path.exists(data_dir):
-            os.makedirs(data_dir, exist_ok=True)
-        
-        stats = {"totalVisitors": 0}
-        if os.path.exists(stats_file):
-            with open(stats_file, "r", encoding="utf-8") as f:
-                stats = json.load(f)
-        
-        stats["totalVisitors"] = stats.get("totalVisitors", 0) + 1
-        with open(stats_file, "w", encoding="utf-8") as f:
-            json.dump(stats, f, indent=2)
+        conn = get_db()
+        c = conn.cursor()
+        c.execute("UPDATE site_stats SET value = value + 1 WHERE key = 'total_visitors'")
+        conn.commit()
+        conn.close()
     except Exception as e:
         print("Error updating visitor count:", e)
 
@@ -614,13 +606,21 @@ def get_shops():
 @app.route("/api/visitors", methods=["GET"])
 def get_visitors():
     try:
-        data_dir = os.path.join(os.path.dirname(__file__), "../data")
-        stats_file = os.path.join(data_dir, "stats.json")
-        stats = {"totalVisitors": 0}
-        if os.path.exists(stats_file):
-            with open(stats_file, "r", encoding="utf-8") as f:
-                stats = json.load(f)
-        return jsonify({"totalVisitors": stats.get("totalVisitors", 0)})
+        conn = get_db()
+        c = conn.cursor()
+        c.execute("SELECT value FROM site_stats WHERE key = 'total_visitors'")
+        row = c.fetchone()
+        conn.close()
+        val = row["value"] if row else 0
+        return jsonify({"totalVisitors": val})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/visitors/increment", methods=["POST"])
+def increment_visitors():
+    try:
+        update_visitor_count()
+        return jsonify({"success": True})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -633,7 +633,6 @@ def add_header(response):
 
 @app.route('/')
 def serve_index():
-    update_visitor_count()
     return send_from_directory('../', 'index.html')
 
 @app.route('/<path:path>')

@@ -550,3 +550,78 @@ textarea:-webkit-autofill:focus {
   margin-top: 3px;
   letter-spacing: 1px;
 }
+
+/* --- 訪客計數器樣式 --- */
+.visitor-badge {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 18px;
+  background: rgba(10, 31, 51, 0.45);
+  border: 1px solid rgba(242, 235, 217, 0.08);
+  border-radius: 50px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 8px 32px rgba(5, 18, 33, 0.3);
+  font-family: 'Montserrat', sans-serif;
+  pointer-events: none;
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.visitor-badge .pulse-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--sea-teal);
+  border-radius: 50%;
+  position: relative;
+  box-shadow: 0 0 10px var(--sea-teal);
+}
+
+.visitor-badge .pulse-dot::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid var(--sea-teal);
+  animation: pulse-ring 2.5s infinite cubic-bezier(0.25, 0, 0, 1);
+  opacity: 0.8;
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.5); opacity: 1; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+.visitor-badge .visitor-label {
+  font-size: 0.6rem;
+  letter-spacing: 3px;
+  color: var(--sea-slate);
+  font-weight: 900;
+}
+
+.visitor-badge .visitor-count {
+  font-size: 0.8rem;
+  font-weight: 300;
+  color: var(--sea-sand);
+  letter-spacing: 1px;
+}
+
+@media (max-width: 600px) {
+  .visitor-badge {
+    top: 16px;
+    right: 16px;
+    padding: 6px 12px;
+    gap: 6px;
+  }
+  .visitor-badge .visitor-label {
+    font-size: 0.55rem;
+    letter-spacing: 2px;
+  }
+  .visitor-badge .visitor-count {
+    font-size: 0.7rem;
+  }
+}

@@ -83,6 +83,11 @@ def init_db():
         story TEXT,
         timestamp TEXT
     );
+    CREATE TABLE IF NOT EXISTS site_stats (
+        key TEXT PRIMARY KEY,
+        value INTEGER
+    );
+    INSERT INTO site_stats (key, value) VALUES ('total_visitors', 0) ON CONFLICT (key) DO NOTHING;
     """)
     conn.close()
 

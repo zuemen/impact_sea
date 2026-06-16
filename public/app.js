@@ -376,3 +376,41 @@ async function loadMetrics() {
     }).join('');
   } catch (err) { console.error('metrics error:', err); }
 }
+
+// ── 訪客計數器功能 ───────────────────────────────────────────
+async function fetchVisitorCount() {
+  try {
+    const res = await fetch('/api/visitors');
+    const data = await res.json();
+    const counterEl = document.getElementById('visitor-count');
+    if (counterEl && data.totalVisitors !== undefined) {
+      counterEl.innerText = data.totalVisitors.toLocaleString();
+    }
+  } catch (e) {
+    console.error('Failed to fetch visitor count', e);
+  }
+}
+
+async function incrementVisitorCount() {
+  if (!localStorage.getItem('impact_sea_v2_visited')) {
+    try {
+      await fetch('/api/visitors/increment', { method: 'POST' });
+      localStorage.setItem('impact_sea_v2_visited', 'true');
+    } catch (e) {
+      console.error('Failed to increment visitor count', e);
+    }
+  }
+}
+
+window.startVisitorPolling = function() {
+  incrementVisitorCount();
+  fetchVisitorCount();
+  setInterval(fetchVisitorCount, 10000); // 每 10 秒輪詢一次
+};
+
+// 頁面載入時啟動訪客輪詢
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => window.startVisitorPolling());
+} else {
+  window.startVisitorPolling();
+}
