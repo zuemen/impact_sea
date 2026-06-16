@@ -9,3 +9,10 @@ data/points-ledger.json
 # 系統檔
 .DS_Store
 *.log
+
+data/social-plastic.json
+
+# Python
+__pycache__/
+*.pyc
+db/*.db
