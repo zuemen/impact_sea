@@ -210,7 +210,12 @@
         .sponsor-btn { padding: 12px 20px; background: var(--gold); color: #000; border: none; border-radius: 5px; font-weight: 900; cursor: pointer; animation: glow-outer 3s infinite; font-size: 0.8rem; letter-spacing: 2px;}
     </style>
 </head>
-<body>
+<body onload="startVisitorPolling()">
+
+<!-- Global Top Bar -->
+<div id="global-header" style="position: fixed; top: 20px; left: 30px; z-index: 200000; pointer-events: none;">
+    <div id="visitor-counter" style="font-size: 0.65rem; color: var(--accent); letter-spacing: 2px; font-weight: 900; text-shadow: 0 0 10px var(--accent);">TOTAL VISITORS: 0</div>
+</div>
 
 <!-- Auth Modal -->
 <div id="auth-modal" style="display: none;">
@@ -274,7 +279,6 @@
 <div id="app-shell">
     <div style="padding: 60px 30px 20px; display: flex; justify-content: space-between; align-items: center;">
         <div>
-            <div id="visitor-counter" style="font-size: 0.65rem; color: var(--accent); letter-spacing: 2px; margin-bottom: 8px; font-weight: 900; text-shadow: 0 0 10px var(--accent);">VISITORS: 0</div>
             <span style="font-size: 0.55rem; letter-spacing: 3px; opacity: 0.4; font-weight: 900;">IMPACT STAMPS</span>
             <div style="display: flex; gap: 10px; margin-top: 10px;" id="stamp-row">
                 <div class="stamp-slot">I</div><div class="stamp-slot">II</div><div class="stamp-slot">III</div><div class="stamp-slot">IV</div><div class="stamp-slot">V</div>
@@ -417,14 +421,26 @@
             const data = await res.json();
             const counterEl = document.getElementById('visitor-counter');
             if (counterEl && data.totalVisitors !== undefined) {
-                counterEl.innerText = `VISITORS: ${data.totalVisitors.toLocaleString()}`;
+                counterEl.innerText = `TOTAL VISITORS: ${data.totalVisitors.toLocaleString()}`;
             }
         } catch (e) {
             console.error('Failed to fetch visitor count', e);
         }
     }
 
+    async function incrementVisitorCount() {
+        if (!localStorage.getItem('impact_sea_v27_visited')) {
+            try {
+                await fetch('/api/visitors/increment', { method: 'POST' });
+                localStorage.setItem('impact_sea_v27_visited', 'true');
+            } catch (e) {
+                console.error('Failed to increment visitor count', e);
+            }
+        }
+    }
+
     function startVisitorPolling() {
+        incrementVisitorCount();
         fetchVisitorCount();
         clearInterval(visitorTimer);
         visitorTimer = setInterval(fetchVisitorCount, 5000); // Poll every 5 seconds
