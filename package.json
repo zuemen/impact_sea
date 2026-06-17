@@ -1,10 +1,23 @@
 {
-  "name": "impact-sea",
-  "version": "1.0.0",
-  "description": "《這片海，離我多遠？》 Node.js MVP",
-  "main": "server.js",
+  "name": "temp-next",
+  "version": "0.1.0",
+  "private": true,
   "scripts": {
-    "start": "node server.js"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
   },
-  "license": "MIT"
+  "dependencies": {
+    "@line/bot-sdk": "^11.0.1",
+    "@line/liff": "^2.29.0",
+    "@supabase/supabase-js": "^2.108.2",
+    "next": "16.2.9",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
+  },
+  "devDependencies": {
+    "eslint": "^9",
+    "eslint-config-next": "16.2.9"
+  }
 }

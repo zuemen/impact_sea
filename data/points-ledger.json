@@ -1,0 +1,62 @@
+[
+  {
+    "id": "tx_1777008166914_10zf",
+    "userId": "user_1777008166913_15493434",
+    "type": "earn",
+    "amount": 30,
+    "reason": "新守護者歡迎禮",
+    "prevHash": "0000000000000000000000000000000000000000",
+    "hash": "290a0b73449069ebc70f16bc6efd460f629c804b",
+    "timestamp": "2026-04-24T05:22:46.914Z"
+  },
+  {
+    "id": "tx_1777008167209_1u6z",
+    "userId": "user_1777008166913_15493434",
+    "type": "spend",
+    "amount": 10,
+    "reason": "抽卡 x1",
+    "prevHash": "290a0b73449069ebc70f16bc6efd460f629c804b",
+    "hash": "491136615847442083405a06a85354fd0d6a77ab",
+    "timestamp": "2026-04-24T05:22:47.209Z"
+  },
+  {
+    "id": "tx_1777008167209_gzzx",
+    "userId": "user_1777008166913_15493434",
+    "type": "earn",
+    "amount": 100,
+    "reason": "抽到 legendary 稀有度補償",
+    "prevHash": "491136615847442083405a06a85354fd0d6a77ab",
+    "hash": "229e2408453c40a38b74e677f97eba9a8057af87",
+    "timestamp": "2026-04-24T05:22:47.209Z"
+  },
+  {
+    "id": "tx_1777008779007_fv02",
+    "userId": "user_1777008779006_92accb8f",
+    "type": "earn",
+    "amount": 30,
+    "reason": "新守護者歡迎禮",
+    "prevHash": "0000000000000000000000000000000000000000",
+    "hash": "f16a47de5916f1da0348dbe105d8b4c20b3e8760",
+    "timestamp": "2026-04-24T05:32:59.006Z"
+  },
+  {
+    "id": "tx_1777008779403_s4bc",
+    "userId": "user_1777008779006_92accb8f",
+    "type": "spend",
+    "amount": 10,
+    "reason": "抽卡 x1",
+    "prevHash": "f16a47de5916f1da0348dbe105d8b4c20b3e8760",
+    "hash": "15275dd5a237aedf008daf1124a5a6ef6c847dd7",
+    "timestamp": "2026-04-24T05:32:59.403Z"
+  },
+  {
+    "id": "tx_1777008779403_8tja",
+    "userId": "user_1777008779006_92accb8f",
+    "type": "earn",
+    "amount": 5,
+    "reason": "抽到 common 稀有度補償",
+    "prevHash": "15275dd5a237aedf008daf1124a5a6ef6c847dd7",
+    "hash": "f2d3fd9bb97bfbf41bfd0889e615dacf6f2865e5",
+    "timestamp": "2026-04-24T05:32:59.403Z"
+  }
+]
