@@ -1,4 +1,4 @@
-import { Client } from '@line/bot-sdk';
+import { messagingApi } from '@line/bot-sdk';
 import crypto from 'crypto';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 
@@ -13,10 +13,9 @@ export const config = {
 const CHANNEL_SECRET = process.env.LINE_CHANNEL_SECRET || '35247eb3ad1aa7e748c11cf5c17f1e4d';
 const CHANNEL_ACCESS_TOKEN = process.env.LINE_CHANNEL_ACCESS_TOKEN || 'dLMnahck3kseitiWmMu8Y8zLcTsfYnn01BiUA5rJ4JTV208lhF2KVtI4qntpo/26peCRGkNd6apPXH79oBetYFj762vRd7w6ovaefNxHBQV9MD14aCktvO4+9ZwZ6B0qfkz79QWVb1h25uuxEB4b/gdB04t89/1O/w1cDnyilFU=';
 
-// 初始化 LINE Bot SDK Client
-const lineClient = new Client({
+// 初始化 LINE Bot SDK Client (v11 規格)
+const lineClient = new messagingApi.MessagingApiClient({
   channelAccessToken: CHANNEL_ACCESS_TOKEN,
-  channelSecret: CHANNEL_SECRET,
 });
 
 // 毒舌金句庫 (融合微塑膠大腦病變等健康恐懼訴求)
@@ -173,16 +172,22 @@ export default async function handler(req, res) {
 
         // 邏輯判定一：查詢附近店家
         if (text === '查詢附近店家' || text.startsWith('#查詢附近店家')) {
-          await lineClient.replyMessage(event.replyToken, {
-            type: 'text',
-            text: DUMMY_SHOPS,
+          await lineClient.replyMessage({
+            replyToken: event.replyToken,
+            messages: [{
+              type: 'text',
+              text: DUMMY_SHOPS,
+            }],
           });
         }
         // 邏輯判定二：查詢海龜狀態
         else if (text === '海龜現況') {
           try {
             const state = await getUserState(lineUid);
-            await lineClient.replyMessage(event.replyToken, buildStatusReply(state));
+            await lineClient.replyMessage({
+              replyToken: event.replyToken,
+              messages: [buildStatusReply(state)],
+            });
           } catch (err) {
             console.error('Failed to reply turtle status:', err);
           }
@@ -190,9 +195,12 @@ export default async function handler(req, res) {
         // 邏輯判定三：隨機抽取今日金句
         else if (text === '今日金句') {
           const randomQuote = TOXIC_QUOTES[Math.floor(Math.random() * TOXIC_QUOTES.length)];
-          await lineClient.replyMessage(event.replyToken, {
-            type: 'text',
-            text: randomQuote,
+          await lineClient.replyMessage({
+            replyToken: event.replyToken,
+            messages: [{
+              type: 'text',
+              text: randomQuote,
+            }],
           });
         }
         // 邏輯判定四：實體掃碼打卡成功
@@ -250,9 +258,12 @@ export default async function handler(req, res) {
             : `${randomQuote}\n\n⚠️ 備註：目前為 Demo 展示模式，打卡已模擬成功（未連接資料庫）。`;
 
           // C. 使用 LINE replyMessage 回傳給使用者
-          await lineClient.replyMessage(event.replyToken, {
-            type: 'text',
-            text: replyText,
+          await lineClient.replyMessage({
+            replyToken: event.replyToken,
+            messages: [{
+              type: 'text',
+              text: replyText,
+            }],
           });
         }
       }

@@ -1,14 +1,13 @@
-import { Client } from '@line/bot-sdk';
+import { messagingApi } from '@line/bot-sdk';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 
 // 讀取環境變數，若無則使用提供好的真實金鑰
 const CHANNEL_SECRET = process.env.LINE_CHANNEL_SECRET || '35247eb3ad1aa7e748c11cf5c17f1e4d';
 const CHANNEL_ACCESS_TOKEN = process.env.LINE_CHANNEL_ACCESS_TOKEN || 'dLMnahck3kseitiWmMu8Y8zLcTsfYnn01BiUA5rJ4JTV208lhF2KVtI4qntpo/26peCRGkNd6apPXH79oBetYFj762vRd7w6ovaefNxHBQV9MD14aCktvO4+9ZwZ6B0qfkz79QWVb1h25uuxEB4b/gdB04t89/1O/w1cDnyilFU=';
 
-// 初始化 LINE Bot SDK Client
-const lineClient = new Client({
+// 初始化 LINE Bot SDK Client (v11 規格)
+const lineClient = new messagingApi.MessagingApiClient({
   channelAccessToken: CHANNEL_ACCESS_TOKEN,
-  channelSecret: CHANNEL_SECRET,
 });
 
 // 毒舌推播訊息範本
@@ -88,9 +87,12 @@ export default async function handler(req, res) {
       // 3. 如果觸發狀態變更，發送 LINE 主動推播訊息
       if (shouldSendPush) {
         try {
-          await lineClient.pushMessage(user.line_uid, {
-            type: 'text',
-            text: pushMessage,
+          await lineClient.pushMessage({
+            to: user.line_uid,
+            messages: [{
+              type: 'text',
+              text: pushMessage,
+            }],
           });
           reports.push({ userId: user.line_uid, action: `Status changed to ${nextStatus}, message pushed.` });
         } catch (pushErr) {
