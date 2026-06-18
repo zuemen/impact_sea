@@ -158,6 +158,11 @@ export default async function handler(req, res) {
     // 解析 Webhook 傳來的事件內容
     const { events } = JSON.parse(bodyString);
 
+    // 防呆機制：若 events 為空或不存在 (例如 LINE 平台的 Verify 驗證請求)，直接回傳 200 成功
+    if (!events || events.length === 0) {
+      return res.status(200).json({ success: true, message: 'Verify success' });
+    }
+
     // 2. 依序處理每個事件
     for (const event of events) {
       if (event.type === 'message' && event.message.type === 'text') {

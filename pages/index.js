@@ -31,6 +31,8 @@ export default function Home() {
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [mounted, setMounted] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLiffReady, setIsLiffReady] = useState(false);
 
   // 頁面載入動畫
   useEffect(() => {
@@ -45,18 +47,22 @@ export default function Home() {
         const liffId = process.env.NEXT_PUBLIC_LIFF_ID || '2010433464-wBKOZ1TT';
         await liff.init({ liffId });
         setLiffObject(liff);
+        setIsLiffReady(true);
 
         if (liff.isLoggedIn()) {
+          setIsLoggedIn(true);
           const profile = await liff.getProfile();
           setUserId(profile.userId);
           setProfileName(profile.displayName || 'LINE 守護者');
           fetchUserStatus(profile.userId);
         } else {
-          liff.login();
+          setIsLoggedIn(false);
         }
       } catch (err) {
         console.error('LIFF initialization failed:', err);
         setTestMode(true);
+        setIsLiffReady(true);
+        setIsLoggedIn(true);
         setError('LIFF 初始化失敗，已自動開啟開發測試模式。');
         setUserId(ADMIN_TEST_UID);
         setProfileName('測試用孿生體');
@@ -65,6 +71,13 @@ export default function Home() {
     };
     initLiff();
   }, []);
+
+  // 登入觸發函式
+  const handleLogin = () => {
+    if (liffObject && !liffObject.isLoggedIn()) {
+      liffObject.login();
+    }
+  };
 
   // 2. 呼叫 API 查詢使用者狀態
   const fetchUserStatus = async (uid) => {
@@ -197,194 +210,225 @@ export default function Home() {
       </div>
 
       <main className="main-content">
-        {/* ==================== 頂部標頭 ==================== */}
-        <header className="app-header">
-          <div className="header-logo">🐢</div>
-          <div className="header-text">
-            <h2 className="header-title">海龜鄙視你</h2>
-            <p className="header-subtitle">厭世生態孿生養成計畫</p>
+        {!isLiffReady ? (
+          <div className="loading-state">
+            <div className="loading-spinner">🌊</div>
+            <p className="loading-text">載入海洋孿生世界中...</p>
           </div>
-          {isDemoMode && <span className="demo-badge">DEMO</span>}
-        </header>
-
-        {/* ==================== KPI 統計看板 ==================== */}
-        <section className="stats-row" id="stats-dashboard">
-          <div className="stat-card">
-            <div className="stat-icon-wrapper"><span className="stat-icon">🧴</span></div>
-            <div className="stat-value">{totalGrams}</div>
-            <div className="stat-label">累計減塑 (g)</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-icon-wrapper"><span className="stat-icon">📅</span></div>
-            <div className="stat-value">{inactiveDays}</div>
-            <div className="stat-label">未打卡天數</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-icon-wrapper"><span className="stat-icon">{config.emoji}</span></div>
-            <div className="stat-value">{config.shortStatus}</div>
-            <div className="stat-label">海龜狀態</div>
-          </div>
-        </section>
-
-        {/* ==================== 孿生海龜狀態展示區 ==================== */}
-        <section className="turtle-section" id="turtle-avatar">
-          <div className="turtle-stage">
-            <div className="pulse-ring ring-1" />
-            <div className="pulse-ring ring-2" />
-            <div className="pulse-ring ring-3" />
-            <div className="turtle-avatar">
-              <span className="turtle-emoji">{config.emoji}</span>
-            </div>
-          </div>
-          <div className="status-badge">{config.badgeText}</div>
-          <h1 className="status-title">{config.title}</h1>
-
-          {/* 生命值血條 */}
-          <div className="health-bar-wrapper">
-            <div className="health-bar">
-              <div
-                className="health-fill"
-                style={{ width: `${config.healthPercent}%`, background: config.healthColor }}
-              />
-            </div>
-            <div className="health-labels">
-              <span className="health-label-hp">HP</span>
-              <span className="health-label-pct">{config.healthPercent}%</span>
-            </div>
-          </div>
-        </section>
-
-        {/* ==================== 故事敘事卡片 ==================== */}
-        <section className="narrative-card" id="narrative">
-          <p className="narrative-text">{config.desc}</p>
-          {userData && (
-            <div className="user-meta">
-              <div className="meta-item">
-                <span className="meta-title">連續未打卡</span>
-                <span className="meta-val">{userData.continuous_inactive_days} 天</span>
+        ) : (isLoggedIn || testMode) ? (
+          <>
+            {/* ==================== 頂部標頭 ==================== */}
+            <header className="app-header">
+              <div className="header-logo">🐢</div>
+              <div className="header-text">
+                <h2 className="header-title">海龜鄙視你</h2>
+                <p className="header-subtitle">厭世生態孿生養成計畫</p>
               </div>
-              <div className="meta-item">
-                <span className="meta-title">上次掃描時間</span>
-                <span className="meta-val">
-                  {new Date(userData.last_scan_date).toLocaleDateString('zh-TW', {
-                    year: 'numeric', month: 'long', day: 'numeric',
-                  })}
-                </span>
+              {isDemoMode && <span className="demo-badge">DEMO</span>}
+            </header>
+
+            {/* ==================== KPI 統計看板 ==================== */}
+            <section className="stats-row" id="stats-dashboard">
+              <div className="stat-card">
+                <div className="stat-icon-wrapper"><span className="stat-icon">🧴</span></div>
+                <div className="stat-value">{totalGrams}</div>
+                <div className="stat-label">累計減塑 (g)</div>
               </div>
-            </div>
-          )}
-        </section>
-
-        {/* ==================== 環保影響力換算 ==================== */}
-        <section className="impact-section" id="impact">
-          <h3 className="section-title">
-            <span className="section-icon">🌊</span>
-            你的環保影響力
-          </h3>
-          <div className="impact-grid">
-            <div className="impact-card">
-              <span className="impact-emoji">🥤</span>
-              <span className="impact-number">{impact.cups}</span>
-              <span className="impact-label">免用塑膠杯</span>
-            </div>
-            <div className="impact-card">
-              <span className="impact-emoji">🛍️</span>
-              <span className="impact-number">{impact.bags}</span>
-              <span className="impact-label">免用塑膠袋</span>
-            </div>
-            <div className="impact-card">
-              <span className="impact-emoji">🥢</span>
-              <span className="impact-number">{impact.straws}</span>
-              <span className="impact-label">免用塑膠吸管</span>
-            </div>
-            <div className="impact-card">
-              <span className="impact-emoji">💨</span>
-              <span className="impact-number">{impact.co2}g</span>
-              <span className="impact-label">減少碳排放</span>
-            </div>
-          </div>
-        </section>
-
-        {/* ==================== 成就勳章系統 ==================== */}
-        <section className="achievements-section" id="achievements">
-          <h3 className="section-title">
-            <span className="section-icon">🏆</span>
-            成就勳章
-          </h3>
-          <div className="achievements-row">
-            {achievements.map((a, i) => (
-              <div key={i} className={`achievement-item ${a.unlocked ? 'unlocked' : 'locked'}`}>
-                <span className="achievement-icon">{a.icon}</span>
-                <span className="achievement-name">{a.name}</span>
-                <span className="achievement-threshold">{a.threshold}g</span>
+              <div className="stat-card">
+                <div className="stat-icon-wrapper"><span className="stat-icon">📅</span></div>
+                <div className="stat-value">{inactiveDays}</div>
+                <div className="stat-label">未打卡天數</div>
               </div>
-            ))}
-          </div>
-        </section>
+              <div className="stat-card">
+                <div className="stat-icon-wrapper"><span className="stat-icon">{config.emoji}</span></div>
+                <div className="stat-value">{config.shortStatus}</div>
+                <div className="stat-label">海龜狀態</div>
+              </div>
+            </section>
 
-        {/* ==================== 快速行動按鈕 ==================== */}
-        <section className="actions-section" id="actions">
-          {(isDemoMode || testMode) && (
-            <button className="action-btn action-scan" id="btn-demo-scan" onClick={handleDemoScan}>
-              <span className="action-btn-icon">📷</span>
-              模擬減塑打卡 (+10g)
-            </button>
-          )}
-          <button
-            className="action-btn action-shop"
-            id="btn-find-shop"
-            onClick={() => {
-              setToastMessage('📍 請在 LINE 聊天室中輸入「#查詢附近店家」即可取得雙北特約店清單！');
-              setToastVisible(true);
-              setTimeout(() => setToastVisible(false), 4000);
-            }}
-          >
-            <span className="action-btn-icon">📍</span>
-            查詢特約無塑店家
-          </button>
-        </section>
+            {/* ==================== 孿生海龜狀態展示區 ==================== */}
+            <section className="turtle-section" id="turtle-avatar">
+              <div className="turtle-stage">
+                <div className="pulse-ring ring-1" />
+                <div className="pulse-ring ring-2" />
+                <div className="pulse-ring ring-3" />
+                <div className="turtle-avatar">
+                  <span className="turtle-emoji">{config.emoji}</span>
+                </div>
+              </div>
+              <div className="status-badge">{config.badgeText}</div>
+              <h1 className="status-title">{config.title}</h1>
 
-        {/* ==================== Toast 通知 ==================== */}
-        <div className={`toast ${toastVisible ? 'toast-visible' : ''}`} role="alert">
-          <p className="toast-text">{toastMessage}</p>
-        </div>
+              {/* 生命值血條 */}
+              <div className="health-bar-wrapper">
+                <div className="health-bar">
+                  <div
+                    className="health-fill"
+                    style={{ width: `${config.healthPercent}%`, background: config.healthColor }}
+                  />
+                </div>
+                <div className="health-labels">
+                  <span className="health-label-hp">HP</span>
+                  <span className="health-label-pct">{config.healthPercent}%</span>
+                </div>
+              </div>
+            </section>
 
-        {/* ==================== 頁尾連線狀態 ==================== */}
-        <footer className="footer-info">
-          {profileName ? (
-            <p className="login-status">
-              已連結 LINE 帳號：<strong>{profileName}</strong>
-            </p>
-          ) : (
-            <p className="login-status">載入中，請稍候...</p>
-          )}
-          {isDemoMode && (
-            <p className="demo-notice">⚠️ 目前為 Demo 展示模式（Supabase 尚未設定）</p>
-          )}
-        </footer>
+            {/* ==================== 故事敘事卡片 ==================== */}
+            <section className="narrative-card" id="narrative">
+              <p className="narrative-text">{config.desc}</p>
+              {userData && (
+                <div className="user-meta">
+                  <div className="meta-item">
+                    <span className="meta-title">連續未打卡</span>
+                    <span className="meta-val">{userData.continuous_inactive_days} 天</span>
+                  </div>
+                  <div className="meta-item">
+                    <span className="meta-title">上次掃描時間</span>
+                    <span className="meta-val">
+                      {new Date(userData.last_scan_date).toLocaleDateString('zh-TW', {
+                        year: 'numeric', month: 'long', day: 'numeric',
+                      })}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </section>
 
-        {/* ==================== 開發者 Bypass 測試主控台 ==================== */}
-        {testMode && (
-          <div className="test-console" id="test-console">
-            <h4>⚙️ 開發者 Bypass 測試主控台</h4>
-            {error && <p className="error-msg">{error}</p>}
-            <form onSubmit={handleTestLoad} className="test-form">
-              <input
-                type="text"
-                value={customUid}
-                onChange={(e) => setCustomUid(e.target.value)}
-                placeholder="輸入測試用 LINE UID"
-                className="test-input"
-                id="input-test-uid"
-              />
-              <button type="submit" className="test-btn" id="btn-test-load" disabled={loading}>
-                {loading ? '載入中...' : '載入狀態'}
+            {/* ==================== 環保影響力換算 ==================== */}
+            <section className="impact-section" id="impact">
+              <h3 className="section-title">
+                <span className="section-icon">🌊</span>
+                你的環保影響力
+              </h3>
+              <div className="impact-grid">
+                <div className="impact-card">
+                  <span className="impact-emoji">🥤</span>
+                  <span className="impact-number">{impact.cups}</span>
+                  <span className="impact-label">免用塑膠杯</span>
+                </div>
+                <div className="impact-card">
+                  <span className="impact-emoji">🛍️</span>
+                  <span className="impact-number">{impact.bags}</span>
+                  <span className="impact-label">免用塑膠袋</span>
+                </div>
+                <div className="impact-card">
+                  <span className="impact-emoji">🥢</span>
+                  <span className="impact-number">{impact.straws}</span>
+                  <span className="impact-label">免用塑膠吸管</span>
+                </div>
+                <div className="impact-card">
+                  <span className="impact-emoji">💨</span>
+                  <span className="impact-number">{impact.co2}g</span>
+                  <span className="impact-label">減少碳排放</span>
+                </div>
+              </div>
+            </section>
+
+            {/* ==================== 成就勳章系統 ==================== */}
+            <section className="achievements-section" id="achievements">
+              <h3 className="section-title">
+                <span className="section-icon">🏆</span>
+                成就勳章
+              </h3>
+              <div className="achievements-row">
+                {achievements.map((a, i) => (
+                  <div key={i} className={`achievement-item ${a.unlocked ? 'unlocked' : 'locked'}`}>
+                    <span className="achievement-icon">{a.icon}</span>
+                    <span className="achievement-name">{a.name}</span>
+                    <span className="achievement-threshold">{a.threshold}g</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* ==================== 快速行動按鈕 ==================== */}
+            <section className="actions-section" id="actions">
+              {(isDemoMode || testMode) && (
+                <button className="action-btn action-scan" id="btn-demo-scan" onClick={handleDemoScan}>
+                  <span className="action-btn-icon">📷</span>
+                  模擬減塑打卡 (+10g)
+                </button>
+              )}
+              <button
+                className="action-btn action-shop"
+                id="btn-find-shop"
+                onClick={() => {
+                  setToastMessage('📍 請在 LINE 聊天室中輸入「#查詢附近店家」即可取得雙北特約店清單！');
+                  setToastVisible(true);
+                  setTimeout(() => setToastVisible(false), 4000);
+                }}
+              >
+                <span className="action-btn-icon">📍</span>
+                查詢特約無塑店家
               </button>
-            </form>
-            <div className="test-tips">
-              提示：點擊「模擬減塑打卡」可即時展示掃碼打卡流程。
-              您也可以到 Supabase 手動修改 <code>turtle_status</code> (2, 1, 0)
-              與 <code>total_saved_grams</code>，重新載入以展示不同狀態。
+            </section>
+
+            {/* ==================== Toast 通知 ==================== */}
+            <div className={`toast ${toastVisible ? 'toast-visible' : ''}`} role="alert">
+              <p className="toast-text">{toastMessage}</p>
+            </div>
+
+            {/* ==================== 頁尾連線狀態 ==================== */}
+            <footer className="footer-info">
+              {profileName ? (
+                <p className="login-status">
+                  已連結 LINE 帳號：<strong>{profileName}</strong>
+                </p>
+              ) : (
+                <p className="login-status">載入中，請稍候...</p>
+              )}
+              {isDemoMode && (
+                <p className="demo-notice">⚠️ 目前為 Demo 展示模式（Supabase 尚未設定）</p>
+              )}
+            </footer>
+
+            {/* ==================== 開發者 Bypass 測試主控台 ==================== */}
+            {testMode && (
+              <div className="test-console" id="test-console">
+                <h4>⚙️ 開發者 Bypass 測試主控台</h4>
+                {error && <p className="error-msg">{error}</p>}
+                <form onSubmit={handleTestLoad} className="test-form">
+                  <input
+                    type="text"
+                    value={customUid}
+                    onChange={(e) => setCustomUid(e.target.value)}
+                    placeholder="輸入測試用 LINE UID"
+                    className="test-input"
+                    id="input-test-uid"
+                  />
+                  <button type="submit" className="test-btn" id="btn-test-load" disabled={loading}>
+                    {loading ? '載入中...' : '載入狀態'}
+                  </button>
+                </form>
+                <div className="test-tips">
+                  提示：點擊「模擬減塑打卡」可即時展示掃碼打卡流程。
+                  您也可以到 Supabase 手動修改 <code>turtle_status</code> (2, 1, 0)
+                  與 <code>total_saved_grams</code>，重新載入以展示不同狀態。
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          /* ==================== 未登入大廳 ==================== */
+          <div className="login-screen">
+            <div className="login-logo">🐢</div>
+            <h1 className="login-title">海龜鄙視你</h1>
+            <p className="login-subtitle">厭世生態孿生養成計畫</p>
+            <div className="login-card">
+              <p className="login-desc">
+                「你今天又製造了多少塑膠垃圾？海龜正在看著你。」
+              </p>
+              <p className="login-subdesc">
+                這是一個連結你的日常減塑與海洋生態的養成計畫。自備環保杯/袋打卡，拯救你的孿生海龜；若冷漠以對，你將見證牠被塑料吞噬的過程。
+              </p>
+              <button className="login-btn-line" onClick={handleLogin}>
+                <span className="btn-line-icon">💬</span>
+                LINE 一鍵登入 ✦ 領養孿生海龜
+              </button>
+            </div>
+            <div className="login-footer">
+              新北 2026 Impact Star 青年影響力啟動賽 MVP 專案
             </div>
           </div>
         )}
@@ -393,6 +437,121 @@ export default function Home() {
       {/* ==================== 完整 CSS 樣式系統 ==================== */}
       <style jsx global>{`
         /* ===== 全域基礎 ===== */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        /* ===== 載入與登入大廳樣式 ===== */
+        .loading-state {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 100px 0;
+          gap: 16px;
+        }
+        .loading-spinner {
+          font-size: 3rem;
+          animation: turtle-float 2.5s ease-in-out infinite;
+        }
+        .loading-text {
+          font-size: 0.88rem;
+          color: #94a3b8;
+          letter-spacing: 1px;
+        }
+
+        .login-screen {
+          width: 100%;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          text-align: center;
+          padding: 20px 8px;
+          animation: fadeIn 0.8s ease;
+        }
+        .login-logo {
+          font-size: 4.5rem;
+          margin-bottom: 8px;
+          animation: turtle-float 4s ease-in-out infinite;
+        }
+        .login-title {
+          font-family: 'Noto Sans TC', sans-serif;
+          font-size: 1.8rem;
+          font-weight: 900;
+          color: #f8fafc;
+          letter-spacing: 2px;
+          text-shadow: 0 0 20px rgba(14,165,233,0.3);
+        }
+        .login-subtitle {
+          font-size: 0.72rem;
+          color: #475569;
+          letter-spacing: 4px;
+          text-transform: uppercase;
+          margin-top: 4px;
+          margin-bottom: 28px;
+        }
+        .login-card {
+          background: rgba(15, 23, 42, 0.45);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 24px;
+          padding: 30px 22px;
+          backdrop-filter: blur(20px);
+          max-width: 380px;
+          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        }
+        .login-desc {
+          font-size: 0.95rem;
+          font-weight: 700;
+          color: #38bdf8;
+          line-height: 1.5;
+        }
+        .login-subdesc {
+          font-size: 0.76rem;
+          color: #94a3b8;
+          line-height: 1.6;
+          text-align: justify;
+        }
+        .login-btn-line {
+          width: 100%;
+          padding: 14px 20px;
+          background: #06c755;
+          color: #ffffff;
+          border: none;
+          border-radius: 14px;
+          font-family: 'Noto Sans TC', sans-serif;
+          font-size: 0.88rem;
+          font-weight: 700;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          box-shadow: 0 4px 20px rgba(6,199,85,0.25);
+          transition: all 0.3s ease;
+          margin-top: 8px;
+        }
+        .login-btn-line:hover {
+          background: #05b04b;
+          transform: translateY(-2px);
+          box-shadow: 0 6px 24px rgba(6,199,85,0.4);
+        }
+        .login-btn-line:active {
+          transform: translateY(0);
+        }
+        .btn-line-icon {
+          font-size: 1.1rem;
+        }
+        .login-footer {
+          margin-top: 40px;
+          font-size: 0.62rem;
+          color: #4b5563;
+          letter-spacing: 1px;
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
