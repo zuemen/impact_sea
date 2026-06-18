@@ -1,5 +1,5 @@
 import { Client } from '@line/bot-sdk';
-import { supabase } from '../../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 
 // 讀取環境變數，若無則使用提供好的真實金鑰
 const CHANNEL_SECRET = process.env.LINE_CHANNEL_SECRET || '35247eb3ad1aa7e748c11cf5c17f1e4d';
@@ -27,6 +27,14 @@ export default async function handler(req, res) {
     secret !== 'test'
   ) {
     return res.status(401).json({ error: 'Unauthorized call to cron' });
+  }
+
+  if (!isSupabaseConfigured) {
+    return res.status(200).json({
+      success: true,
+      message: 'Demo 模式：Supabase 未設定，跳過每日排程扣血與推播邏輯。',
+      demo: true,
+    });
   }
 
   try {
