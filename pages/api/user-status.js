@@ -1,4 +1,18 @@
-import { supabase } from '../../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../../lib/supabase';
+
+// ====================================================================
+// Demo 模式假資料 — 供 Supabase 尚未設定時的商業簡報展示使用
+// ====================================================================
+const DEMO_DATA = {
+  // 管理員測試帳號 — 預設為健康海龜，已累積 150g 減塑
+  'U735e28c5b4fd267ab0e92c9890d4f232': {
+    line_uid: 'U735e28c5b4fd267ab0e92c9890d4f232',
+    turtle_status: 2,
+    continuous_inactive_days: 0,
+    total_saved_grams: 150,
+    last_scan_date: new Date().toISOString(),
+  },
+};
 
 export default async function handler(req, res) {
   // 僅允許 GET 請求
@@ -11,11 +25,32 @@ export default async function handler(req, res) {
 
   // 驗證 userId 是否存在
   if (!userId) {
-    return res.status(400).json({ error: 'Missing userId parameter' });
+    return res.status(400).json({ success: false, error: 'Missing userId parameter' });
   }
 
+  // ====================================================================
+  // Demo 模式：Supabase 未設定時直接回傳假資料，確保前端能正常展示
+  // ====================================================================
+  if (!isSupabaseConfigured) {
+    const demoUser = DEMO_DATA[userId] || {
+      line_uid: userId,
+      turtle_status: 2,
+      continuous_inactive_days: 0,
+      total_saved_grams: 50,
+      last_scan_date: new Date().toISOString(),
+    };
+    return res.status(200).json({
+      success: true,
+      data: demoUser,
+      demo: true,
+      message: 'Demo 模式：Supabase 尚未設定，回傳展示用假資料。',
+    });
+  }
+
+  // ====================================================================
+  // 正式模式：查詢 Supabase 資料庫
+  // ====================================================================
   try {
-    // 查詢 Supabase 資料庫
     const { data: user, error: selectError } = await supabase
       .from('users')
       .select('*')
@@ -53,6 +88,6 @@ export default async function handler(req, res) {
     }
   } catch (error) {
     console.error('Fetch user status error:', error);
-    return res.status(500).json({ error: error.message || 'Internal Server Error' });
+    return res.status(500).json({ success: false, error: error.message || 'Internal Server Error' });
   }
 }
