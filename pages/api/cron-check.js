@@ -31,9 +31,32 @@ export default async function handler(req, res) {
   }
 
   if (!isSupabaseConfigured) {
+    const { test_uid } = req.query;
+    if (test_uid) {
+      try {
+        await lineClient.pushMessage({
+          to: test_uid,
+          messages: [{
+            type: 'text',
+            text: '【🤖 測試情緒勒索通知】\n這是一則手動測試通知！您目前處於 Demo 模式（無 Supabase 資料庫），但 LINE Bot 推播管道一切正常。海龜在看著你喔！🐢'
+          }],
+        });
+        return res.status(200).json({
+          success: true,
+          message: `Demo 模式：成功發送測試推播至 ${test_uid}！`,
+          demo: true,
+        });
+      } catch (err) {
+        return res.status(500).json({
+          success: false,
+          error: `Demo 模式發送通知失敗：${err.message}`,
+          demo: true,
+        });
+      }
+    }
     return res.status(200).json({
       success: true,
-      message: 'Demo 模式：Supabase 未設定，跳過每日排程扣血與推播邏輯。',
+      message: 'Demo 模式：Supabase 未設定，跳過每日排程扣血與推播邏輯。您可以在網址加上 `&test_uid=您的LINE_UID` 來測試 LINE 推播發送。',
       demo: true,
     });
   }
