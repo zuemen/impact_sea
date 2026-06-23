@@ -83,24 +83,20 @@ export default async function handler(req, res) {
       let pushMessage = '';
 
       // 判定邏輯：依據未打卡天數發送 Duolingo 式提醒
-      if (diffDays >= 7) {
-        if (user.turtle_status !== 0) {
-          nextStatus = 0; // 死亡
-          shouldSendPush = true;
-          pushMessage = MSG_DEAD;
-        } else if (diffDays === 10) {
-          shouldSendPush = true;
-          pushMessage = MSG_SILENT;
-        }
+      if (diffDays === 10) {
+        shouldSendPush = true;
+        pushMessage = MSG_SILENT;
+      } else if (diffDays === 7) {
+        nextStatus = 0; // 死亡
+        shouldSendPush = true;
+        pushMessage = MSG_DEAD;
       } else if (diffDays === 5) {
         shouldSendPush = true;
         pushMessage = MSG_NUDGE;
-      } else if (diffDays >= 3) {
-        if (user.turtle_status === 2) {
-          nextStatus = 1; // 生病混濁
-          shouldSendPush = true;
-          pushMessage = MSG_SICK;
-        }
+      } else if (diffDays === 3) {
+        nextStatus = 1; // 生病混濁
+        shouldSendPush = true;
+        pushMessage = MSG_SICK;
       }
 
       // 更新使用者的狀態與連續未打卡天數
