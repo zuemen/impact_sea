@@ -57,6 +57,10 @@ export default function Home() {
           fetchUserStatus(profile.userId);
         } else {
           setIsLoggedIn(false);
+          // 如果是在 LINE App 內開啟，自動觸發授權登入，降底阻力
+          if (liff.isInClient()) {
+            liff.login();
+          }
         }
       } catch (err) {
         console.error('LIFF initialization failed:', err);
