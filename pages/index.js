@@ -41,6 +41,11 @@ export default function Home() {
 
   // 1. 初始化 LIFF SDK (僅在瀏覽器端執行)
   useEffect(() => {
+    // 檢查 URL 參數是否包含 test=true，如果是則強制開啟測試模式以便簡報/測試
+    if (typeof window !== 'undefined' && window.location.search.includes('test=true')) {
+      setTestMode(true);
+    }
+
     const initLiff = async () => {
       try {
         const liff = (await import('@line/liff')).default;
@@ -125,58 +130,114 @@ export default function Home() {
     }
   };
 
-  // 3. Demo 模式模擬掃碼打卡
-  const handleDemoScan = () => {
-    if (!userData) return;
-    const newGrams = (userData.total_saved_grams || 0) + 10;
-    const nowIso = new Date().toISOString();
-    
-    // Demo 模式下儲存至本機
-    localStorage.setItem(`last_scan_date_${userId}`, nowIso);
-    localStorage.setItem(`total_saved_grams_${userId}`, newGrams.toString());
+  // 3. 掃碼打卡 (正式/Demo 通用)
+  const handleScan = async () => {
+    if (!userData || !userId) return;
+    setLoading(true);
+    setError('');
+    try {
+      if (isDemoMode) {
+        // Demo 模式下儲存至本機
+        const newGrams = (userData.total_saved_grams || 0) + 10;
+        const nowIso = new Date().toISOString();
+        
+        localStorage.setItem(`last_scan_date_${userId}`, nowIso);
+        localStorage.setItem(`total_saved_grams_${userId}`, newGrams.toString());
 
-    setUserData({
-      ...userData,
-      turtle_status: 2,
-      continuous_inactive_days: 0,
-      total_saved_grams: newGrams,
-      last_scan_date: nowIso,
-    });
+        setUserData({
+          ...userData,
+          turtle_status: 2,
+          continuous_inactive_days: 0,
+          total_saved_grams: newGrams,
+          last_scan_date: nowIso,
+        });
 
-    const quote = TOXIC_QUOTES[Math.floor(Math.random() * TOXIC_QUOTES.length)];
-    setToastMessage(quote);
-    setToastVisible(true);
-    setTimeout(() => setToastVisible(false), 5000);
+        const quote = TOXIC_QUOTES[Math.floor(Math.random() * TOXIC_QUOTES.length)];
+        setToastMessage(quote);
+        setToastVisible(true);
+        setTimeout(() => setToastVisible(false), 5000);
+      } else {
+        // 正式模式下打卡寫入 Supabase 資料庫
+        const res = await fetch('/api/user-status', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ userId }),
+        });
+        const result = await res.json();
+        if (result.success) {
+          // 重新載入最新狀態
+          await fetchUserStatus(userId);
+          
+          const quote = TOXIC_QUOTES[Math.floor(Math.random() * TOXIC_QUOTES.length)];
+          setToastMessage(quote);
+          setToastVisible(true);
+          setTimeout(() => setToastVisible(false), 5000);
+        } else {
+          setError('打卡失敗：' + (result.error || '未知錯誤'));
+        }
+      }
+    } catch (err) {
+      console.error('Scan error:', err);
+      setError('連線失敗：' + err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // 3.5 模擬未打卡天數 (開發測試用)
-  const handleSimulateInactivity = (days) => {
-    if (!userData) return;
-    const targetDate = new Date();
-    targetDate.setDate(targetDate.getDate() - days);
-    const targetIso = targetDate.toISOString();
-    
-    if (isDemoMode) {
-      localStorage.setItem(`last_scan_date_${userId}`, targetIso);
+  // 3.5 模擬未打卡天數 (開發測試用，支援 Demo 與正式模式同步寫庫)
+  const handleSimulateInactivity = async (days) => {
+    if (!userData || !userId) return;
+    setLoading(true);
+    setError('');
+    try {
+      const targetDate = new Date();
+      targetDate.setDate(targetDate.getDate() - days);
+      const targetIso = targetDate.toISOString();
+
+      if (isDemoMode) {
+        localStorage.setItem(`last_scan_date_${userId}`, targetIso);
+        
+        const diffTime = Math.abs(new Date() - targetDate);
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        
+        let newStatus = 2;
+        if (diffDays >= 7) newStatus = 0;
+        else if (diffDays >= 3) newStatus = 1;
+        
+        setUserData({
+          ...userData,
+          turtle_status: newStatus,
+          continuous_inactive_days: diffDays,
+          last_scan_date: targetIso,
+        });
+      } else {
+        // 正式模式：向伺服器發送模擬寫庫請求
+        const res = await fetch('/api/user-status', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ userId, simulateDays: days }),
+        });
+        const result = await res.json();
+        if (result.success) {
+          await fetchUserStatus(userId);
+        } else {
+          setError('模擬寫庫失敗：' + (result.error || '未知錯誤'));
+        }
+      }
+      
+      setToastMessage(`🔧 已成功模擬未打卡 ${days} 天，海龜狀態已更新！`);
+      setToastVisible(true);
+      setTimeout(() => setToastVisible(false), 3000);
+    } catch (err) {
+      console.error('Simulate error:', err);
+      setError('連線失敗：' + err.message);
+    } finally {
+      setLoading(false);
     }
-    
-    const diffTime = Math.abs(new Date() - targetDate);
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    
-    let newStatus = 2;
-    if (diffDays >= 7) newStatus = 0;
-    else if (diffDays >= 3) newStatus = 1;
-    
-    setUserData({
-      ...userData,
-      turtle_status: newStatus,
-      continuous_inactive_days: diffDays,
-      last_scan_date: targetIso,
-    });
-    
-    setToastMessage(`🔧 已成功模擬未打卡 ${days} 天，海龜狀態已更新！`);
-    setToastVisible(true);
-    setTimeout(() => setToastVisible(false), 3000);
   };
 
   // 4. 測試主控台手動載入
@@ -404,12 +465,10 @@ export default function Home() {
 
             {/* ==================== 快速行動按鈕 ==================== */}
             <section className="actions-section" id="actions">
-              {(isDemoMode || testMode) && (
-                <button className="action-btn action-scan" id="btn-demo-scan" onClick={handleDemoScan}>
-                  <span className="action-btn-icon">📷</span>
-                  模擬減塑打卡 (+10g)
-                </button>
-              )}
+              <button className="action-btn action-scan" id="btn-scan" onClick={handleScan} disabled={loading}>
+                <span className="action-btn-icon">📷</span>
+                {loading ? '打卡中...' : '減塑打卡 (+10g)'}
+              </button>
               <button
                 className="action-btn action-shop"
                 id="btn-find-shop"

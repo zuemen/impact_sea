@@ -119,7 +119,7 @@ export default async function handler(req, res) {
       return res.status(500).json({ success: false, error: error.message || 'Internal Server Error' });
     }
   } else if (req.method === 'POST') {
-    const { userId } = req.body;
+    const { userId, simulateDays } = req.body;
 
     // 驗證 userId 是否存在
     if (!userId) {
@@ -137,7 +137,7 @@ export default async function handler(req, res) {
     }
 
     // ====================================================================
-    // 正式模式：在 Supabase 更新減塑打卡狀態
+    // 正式模式：在 Supabase 更新減塑打卡狀態 或 模擬未打卡狀態
     // ====================================================================
     try {
       // 先查詢使用者資料
@@ -152,6 +152,53 @@ export default async function handler(req, res) {
       }
 
       const now = new Date().toISOString();
+
+      // 情境 A：開發者模擬未打卡天數
+      if (simulateDays !== undefined) {
+        const days = parseInt(simulateDays, 10);
+        const targetDate = new Date();
+        targetDate.setDate(targetDate.getDate() - days);
+        const targetIso = targetDate.toISOString();
+
+        let targetStatus = 2;
+        if (days >= 7) targetStatus = 0;
+        else if (days >= 3) targetStatus = 1;
+
+        if (user) {
+          const { data: updatedUser, error: updateError } = await supabase
+            .from('users')
+            .update({
+              continuous_inactive_days: days,
+              turtle_status: targetStatus,
+              last_scan_date: targetIso,
+            })
+            .eq('line_uid', userId)
+            .select()
+            .single();
+
+          if (updateError) throw updateError;
+          return res.status(200).json({ success: true, data: updatedUser });
+        } else {
+          const defaultUser = {
+            line_uid: userId,
+            turtle_status: targetStatus,
+            continuous_inactive_days: days,
+            total_saved_grams: 0,
+            last_scan_date: targetIso,
+          };
+
+          const { data: insertedUser, error: insertError } = await supabase
+            .from('users')
+            .insert(defaultUser)
+            .select()
+            .single();
+
+          if (insertError) throw insertError;
+          return res.status(201).json({ success: true, data: insertedUser });
+        }
+      }
+
+      // 情境 B：正常減塑打卡
       if (user) {
         // 使用者已存在，更新累計減塑克數與打卡天數
         const { data: updatedUser, error: updateError } = await supabase
