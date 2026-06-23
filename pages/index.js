@@ -492,7 +492,8 @@ export default function Home() {
             <footer className="footer-info">
               {profileName ? (
                 <p className="login-status">
-                  已連結 LINE 帳號：<strong>{profileName}</strong>
+                  已連結 LINE 帳號：<strong>{profileName}</strong> <br />
+                  <span style={{ fontSize: '10px', opacity: 0.6, wordBreak: 'break-all' }}>UID: {userId}</span>
                 </p>
               ) : (
                 <p className="login-status">載入中，請稍候...</p>
