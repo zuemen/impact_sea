@@ -11,8 +11,10 @@ const lineClient = new messagingApi.MessagingApiClient({
 });
 
 // 毒舌推播訊息範本
-const MSG_SICK = '哈囉？你的孿生海龜已經因為你超過 3 天沒打卡而【生病】了！海水已經變得混濁不堪，牠的大腦神經元正在被微塑膠慢慢侵蝕。看來你對環保的熱情也只持續了三分鐘，真是個三分鐘熱度的廢物人類呢。🐢';
-const MSG_DEAD = '【海龜死亡遺言】恭喜你！因為你整整 7 天沒有進行減塑打卡，你的孿生海龜已經不幸【死亡】了。這是一具殘破的黑白骨架，牠的大腦與內臟完全被你製造的微塑膠塞滿。牠最後的遺言是：『祝你在充滿微塑膠的地球裡，慢性病發作愉快，我們地獄見。』💀';
+const MSG_SICK = '【🤢 孿生海龜生病警告】\n你的海龜因為你連續 3 天沒打卡而生病了！牠的大腦正被微塑膠慢慢侵蝕。看來你對環保的熱情也只持續了三分鐘呢，真是個三分鐘熱度的廢物人類。🐢';
+const MSG_NUDGE = '【🙄 海龜在看著你】\n嗨，是我。你已經 5 天沒理我了。沒關係，反正海水髒不髒、我體內有沒有塑化劑，對你來說大概也不太重要吧？祝你今天喝手搖杯用塑膠吸管用得開心！🥤';
+const MSG_DEAD = '【💀 孿生海龜死亡通知】\n恭喜！因為你整整 7 天沒有進行減塑打卡，你的孿生海龜已經不幸死亡。牠最後的遺言是：『祝你在充滿微塑膠的地球裡，慢性病發作愉快，我們地獄見。』💀';
+const MSG_SILENT = '【🗑️ 這是最後一則訊息】\n看來你的海龜已經徹底被遺忘了。這也是我們最後一次發送通知，畢竟我們也不想強求一個不在乎海洋的人去帶環保杯。祝你的微塑膠血管通暢，再見。';
 
 export default async function handler(req, res) {
   // 為了安全防護，此端點預期由 Vercel Cron 排程或帶有安全密鑰的請求呼叫
@@ -57,17 +59,25 @@ export default async function handler(req, res) {
       let shouldSendPush = false;
       let pushMessage = '';
 
-      // 判定邏輯：超過 7 天沒打卡且尚未判定死亡
-      if (diffDays >= 7 && user.turtle_status !== 0) {
-        nextStatus = 0; // 死亡
+      // 判定邏輯：依據未打卡天數發送 Duolingo 式提醒
+      if (diffDays >= 7) {
+        if (user.turtle_status !== 0) {
+          nextStatus = 0; // 死亡
+          shouldSendPush = true;
+          pushMessage = MSG_DEAD;
+        } else if (diffDays === 10) {
+          shouldSendPush = true;
+          pushMessage = MSG_SILENT;
+        }
+      } else if (diffDays === 5) {
         shouldSendPush = true;
-        pushMessage = MSG_DEAD;
-      } 
-      // 判定邏輯：超過 3 天沒打卡且原本為健康狀態
-      else if (diffDays >= 3 && diffDays < 7 && user.turtle_status === 2) {
-        nextStatus = 1; // 生病混濁
-        shouldSendPush = true;
-        pushMessage = MSG_SICK;
+        pushMessage = MSG_NUDGE;
+      } else if (diffDays >= 3) {
+        if (user.turtle_status === 2) {
+          nextStatus = 1; // 生病混濁
+          shouldSendPush = true;
+          pushMessage = MSG_SICK;
+        }
       }
 
       // 更新使用者的狀態與連續未打卡天數

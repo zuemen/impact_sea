@@ -88,8 +88,28 @@ export default function Home() {
       const res = await fetch(`/api/user-status?userId=${encodeURIComponent(uid)}`);
       const result = await res.json();
       if (result.success) {
-        setUserData(result.data);
-        if (result.demo) setIsDemoMode(true);
+        let data = result.data;
+        if (result.demo) {
+          setIsDemoMode(true);
+          // 在 Demo 模式下，自本機端 localStorage 讀取累積天數與重量，達到累積效果
+          const localLastScan = localStorage.getItem(`last_scan_date_${uid}`);
+          const localSavedGrams = localStorage.getItem(`total_saved_grams_${uid}`);
+          
+          if (localLastScan) data.last_scan_date = localLastScan;
+          if (localSavedGrams) data.total_saved_grams = parseInt(localSavedGrams, 10);
+          
+          // 計算未打卡天數
+          const now = new Date();
+          const lastScan = new Date(data.last_scan_date);
+          const diffTime = Math.abs(now - lastScan);
+          const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+          
+          data.continuous_inactive_days = diffDays;
+          if (diffDays >= 7) data.turtle_status = 0;
+          else if (diffDays >= 3) data.turtle_status = 1;
+          else data.turtle_status = 2;
+        }
+        setUserData(data);
       } else {
         setError('資料庫連線失敗：' + (result.error || '未知錯誤'));
       }
@@ -105,18 +125,54 @@ export default function Home() {
   const handleDemoScan = () => {
     if (!userData) return;
     const newGrams = (userData.total_saved_grams || 0) + 10;
+    const nowIso = new Date().toISOString();
+    
+    // Demo 模式下儲存至本機
+    localStorage.setItem(`last_scan_date_${userId}`, nowIso);
+    localStorage.setItem(`total_saved_grams_${userId}`, newGrams.toString());
+
     setUserData({
       ...userData,
       turtle_status: 2,
       continuous_inactive_days: 0,
       total_saved_grams: newGrams,
-      last_scan_date: new Date().toISOString(),
+      last_scan_date: nowIso,
     });
 
     const quote = TOXIC_QUOTES[Math.floor(Math.random() * TOXIC_QUOTES.length)];
     setToastMessage(quote);
     setToastVisible(true);
     setTimeout(() => setToastVisible(false), 5000);
+  };
+
+  // 3.5 模擬未打卡天數 (開發測試用)
+  const handleSimulateInactivity = (days) => {
+    if (!userData) return;
+    const targetDate = new Date();
+    targetDate.setDate(targetDate.getDate() - days);
+    const targetIso = targetDate.toISOString();
+    
+    if (isDemoMode) {
+      localStorage.setItem(`last_scan_date_${userId}`, targetIso);
+    }
+    
+    const diffTime = Math.abs(new Date() - targetDate);
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    let newStatus = 2;
+    if (diffDays >= 7) newStatus = 0;
+    else if (diffDays >= 3) newStatus = 1;
+    
+    setUserData({
+      ...userData,
+      turtle_status: newStatus,
+      continuous_inactive_days: diffDays,
+      last_scan_date: targetIso,
+    });
+    
+    setToastMessage(`🔧 已成功模擬未打卡 ${days} 天，海龜狀態已更新！`);
+    setToastVisible(true);
+    setTimeout(() => setToastVisible(false), 3000);
   };
 
   // 4. 測試主控台手動載入
@@ -405,6 +461,11 @@ export default function Home() {
                   提示：點擊「模擬減塑打卡」可即時展示掃碼打卡流程。
                   您也可以到 Supabase 手動修改 <code>turtle_status</code> (2, 1, 0)
                   與 <code>total_saved_grams</code>，重新載入以展示不同狀態。
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '12px', flexWrap: 'wrap' }}>
+                    <button type="button" className="test-btn" onClick={() => handleSimulateInactivity(3)}>模擬 3 天未打卡 (生病)</button>
+                    <button type="button" className="test-btn" onClick={() => handleSimulateInactivity(7)}>模擬 7 天未打卡 (死亡)</button>
+                    <button type="button" className="test-btn" onClick={() => handleSimulateInactivity(0)}>重置未打卡 (健康)</button>
+                  </div>
                 </div>
               </div>
             )}
